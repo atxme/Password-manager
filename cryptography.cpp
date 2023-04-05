@@ -29,7 +29,7 @@
 
 #ifndef __include_string__
 #define __include_string__
-#include <string>
+#include <string.h>
 #endif
 
 #ifndef __include_AES_h__
@@ -58,11 +58,11 @@
 #endif 
 
 #include <iomanip>
-#include <cstdlib>
+#include <string>
 #include "cryptography.hpp"
 
 
-string hash (string password){
+std::string hash (std::string password){
     unsigned char hash[SHA256_DIGEST_LENGTH];
     SHA256_CTX sha256;
     SHA256_Init(&sha256);
@@ -75,7 +75,7 @@ string hash (string password){
 }
 
 
-void generateEnvironnementVariable(string key){
+void generateEnvironnementVariable(std::string key){
     
     setenv("AES_KEY", key, 1);
 }
@@ -88,22 +88,27 @@ void GENERATE_AES_KEY(){
     unsigned char key[EVP_MAX_KEY_LENGTH];
     if (!RAND_bytes(key, sizeof(key))) {
         std::cerr << "Erreur lors de la génération de la clé AES-256\n";
-        return 1;
     }
     
-    std::cout ("Clé AES-256 générée: ",key);
+    std::cout << "Clé AES-256 généré avec succès" << std::endl;
 
     // Nettoie OpenSSL
     EVP_cleanup();
     RAND_cleanup();
+
+    const char* environnement_variable = std::getenv("AES_KEY");
+    if (environnement_variable == NULL){
+        setenv("AES_KEY", key, 1);
+    }
+    else{  //delete important informations from RAM
+        delete environnement_variable;
+        delete key;
+    }
+    
 }
 
-
-string returnKey(){
-    string key; 
+char* returnValue(){
+    const char *key = std::getenv("AES_KEY");
     return key;
 }
 
-int main(){
-    GENERATE_AES_KEY();
-}

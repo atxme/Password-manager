@@ -51,8 +51,9 @@
 #endif
 
 #ifndef CRYPTOGRAPHY_HPP
-#define CRYPTOGRAPHY_HPP    
+#define CRYPTOGRAPHY_HPP   
+#endif 
 
-string hash(string password);
+std::string hash(std::string password);
 
-string returnKey();
+std::string returnKey();
