@@ -33,11 +33,11 @@ namespace LoginEnvironnement {
 
     private:
         std::string password;
-        std::string hashpassword;
 
     public:
         void createUser();
-        void buttonClicked(GtkWidget *widget, gpointer data);
+        static void buttonClicked(GtkWidget *widget, gpointer data);
+        static void togglePassword(GtkWidget *widget, gpointer data);
     };
 
 

@@ -31,22 +31,37 @@ namespace LoginEnvironnement {
     class Interface {
     private:
         std::string password;
-        std::string hashpassword;
 
     public:
         void createUser();
         static void buttonClicked(GtkWidget *widget, gpointer data);
+        static void togglePassword(GtkWidget *widget, gpointer data);
     };
-
-    
 
 }
 
-// Déclaration de la fonction buttonClicked à l'extérieur de la classe Interface
+
+
+void LoginEnvironnement::Interface::togglePassword(GtkWidget *widget, gpointer data) {
+    GtkWidget *entry = GTK_WIDGET(data);
+    if (gtk_entry_get_visibility(GTK_ENTRY(entry))) {
+        gtk_entry_set_visibility(GTK_ENTRY(entry), FALSE);
+        gtk_button_set_label(GTK_BUTTON(widget), "Show");
+    } else {
+        gtk_entry_set_visibility(GTK_ENTRY(entry), TRUE);
+        gtk_button_set_label(GTK_BUTTON(widget), "Hide");
+    }
+}
+
 void LoginEnvironnement::Interface::buttonClicked(GtkWidget *widget, gpointer data) {
     const gchar *entry_text;
+    std::string hashpassword;
     entry_text = gtk_entry_get_text(GTK_ENTRY(data));
-    std::cout << entry_text << std::endl;
+    std::string password = std::string (entry_text);
+    hashpassword = hashFunction(password);
+    generateEnvironnementVariable("HASH_LOGIN", hashpassword);
+    GENERATE_AES_KEY();
+    
 }
 
 void LoginEnvironnement::Interface::createUser() {
@@ -55,6 +70,7 @@ void LoginEnvironnement::Interface::createUser() {
     GtkWidget *entry;
     GtkWidget *grid;
     GtkWidget *vbox;
+    GtkWidget *toggleButton;
     GtkCssProvider *provider, *provider2;
 
     gtk_init(0, NULL);
@@ -89,6 +105,14 @@ void LoginEnvironnement::Interface::createUser() {
     entry = gtk_entry_new();
     gtk_widget_set_size_request(entry, 200, 30); // Ajuster la taille de la zone de texte
     gtk_box_pack_start(GTK_BOX(vbox), entry, FALSE, FALSE, 0);
+    gtk_entry_set_visibility(GTK_ENTRY(entry), FALSE); // Masquer le texte entré
+
+    GtkWidget *hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+    gtk_box_pack_end(GTK_BOX(vbox), hbox, FALSE, FALSE, 0);
+
+    toggleButton = gtk_button_new_with_label("Show");
+    gtk_box_pack_end(GTK_BOX(hbox), toggleButton, FALSE, FALSE, 0);
+
 
     button = gtk_button_new_with_label("Login");
     gtk_widget_set_size_request(button, 100, 30); // Ajuster la taille du bouton
@@ -99,11 +123,17 @@ void LoginEnvironnement::Interface::createUser() {
     GtkStyleContext *context = gtk_widget_get_style_context(button);
     gtk_style_context_add_provider(context, GTK_STYLE_PROVIDER(provider2), GTK_STYLE_PROVIDER_PRIORITY_USER);
 
-    gtk_box_pack_start(GTK_BOX(vbox), button, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(hbox), button, FALSE, FALSE, 0);
 
-    g_signal_connect(button, "clicked", G_CALLBACK(gtk_main_quit), NULL);
+
+    g_signal_connect(toggleButton, "clicked", G_CALLBACK(LoginEnvironnement::Interface::togglePassword), entry);
+    g_signal_connect(button, "clicked", G_CALLBACK(buttonClicked), entry);
+    g_signal_connect(entry, "activate", G_CALLBACK(buttonClicked), entry);
 
     gtk_widget_show_all(createUserwindow);
 
     gtk_main();
-}
+}   
+
+
+

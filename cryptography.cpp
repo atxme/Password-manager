@@ -1,5 +1,3 @@
-#pragma once 
-
 /*
 ||---------------------------------------------------------------------------------------------||
 ||---------------------------------------------------------------------------------------------||
@@ -55,6 +53,7 @@
 #ifndef __define_aes_size__ 
 #define AES_KEY_SIZE 256
 #define AES_BLOCK_SIZE 256
+#define AES_KEY_LENGTH 256
 #endif 
 
 #include <iomanip>
@@ -62,7 +61,7 @@
 #include "cryptography.hpp"
 
 
-std::string hash (std::string password){
+std::string hashFunction (std::string password){
     unsigned char hash[SHA256_DIGEST_LENGTH];
     SHA256_CTX sha256;
     SHA256_Init(&sha256);
@@ -75,9 +74,10 @@ std::string hash (std::string password){
 }
 
 
-void generateEnvironnementVariable(std::string key){
+void generateEnvironnementVariable(const char* VariableName ,std::string Valeur){
     
-    setenv("AES_KEY", key, 1);
+    setenv(VariableName, Valeur.c_str(), 1);
+    std::cout <<"done" << std::endl;
 }
 
 void GENERATE_AES_KEY(){
@@ -85,7 +85,7 @@ void GENERATE_AES_KEY(){
     RAND_load_file("/dev/urandom", 32);
 
     // Génère une clé AES-256
-    unsigned char key[EVP_MAX_KEY_LENGTH];
+    unsigned char key[AES_KEY_LENGTH/8];
     if (!RAND_bytes(key, sizeof(key))) {
         std::cerr << "Erreur lors de la génération de la clé AES-256\n";
     }
@@ -98,17 +98,16 @@ void GENERATE_AES_KEY(){
 
     const char* environnement_variable = std::getenv("AES_KEY");
     if (environnement_variable == NULL){
-        setenv("AES_KEY", key, 1);
+        std::string key_string(reinterpret_cast<char*>(key), sizeof(key));
+        setenv("AES_KEY", key_string.c_str(), 1);
     }
     else{  //delete important informations from RAM
-        delete environnement_variable;
-        delete key;
+        // Note: It's not recommended to use 'delete[]' for memory not allocated by 'new[]'
+        // You can use 'memset()' to zero the memory before returning it to the system
+        memset(key, 0, sizeof(key));
     }
-    
 }
 
-char* returnValue(){
-    const char *key = std::getenv("AES_KEY");
-    return key;
-}
+std::string encrypt (unsigned char * key , std::string data){
 
+}

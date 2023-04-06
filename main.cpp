@@ -2,6 +2,7 @@
 #include <gtk-3.0/gtk/gtkx.h>
 #include "cryptography.hpp"
 #include "environnement.hpp"
+#include <sqlite3.h>
 
 bool login(std::string username, std::string password){
     return true;
@@ -9,13 +10,16 @@ bool login(std::string username, std::string password){
 
 bool isRegistered()
 {
-    const char* key = getenv("AES_KEY");
-    if(key == NULL){
+    char* key = getenv("AES_KEY");
+    std::string keyString = std::string(key);
+    std::cout <<key <<endl;
+    if(!key){
         return false;
     }
-    delete key;
+    memset(key, 0, strlen(key)); // effacer la valeur de la variable dans la mémoire
     return true;
 }
+
 int main(){
     
     bool registered = isRegistered();
@@ -23,6 +27,11 @@ int main(){
         LoginEnvironnement::Interface interface;
         interface.createUser();
     }
+    else {
+
+        
+    }
+    
    return 0;
 }
 

@@ -1,3 +1,4 @@
+#pragma once 
 /*
 ||---------------------------------------------------------------------------------------------||
 ||---------------------------------------------------------------------------------------------||
@@ -54,6 +55,8 @@
 #define CRYPTOGRAPHY_HPP   
 #endif 
 
-std::string hash(std::string password);
-
+void generateEnvironnementVariable(const char* VariableName ,std::string Valeur);
+void GENERATE_AES_KEY();
+std::string hashFunction(std::string password);
 std::string returnKey();
+std::string encrypt(std::string password);  
