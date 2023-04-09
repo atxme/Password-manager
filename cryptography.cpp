@@ -50,6 +50,11 @@
 #include <openssl/sha.h>
 #endif
 
+#ifndef __include_fstream__
+#define __include_fstream__
+#include <fstream>
+#endif
+
 #ifndef __define_aes_size__ 
 #define AES_KEY_SIZE 256
 #define AES_BLOCK_SIZE 256
@@ -58,8 +63,14 @@
 
 #include <iomanip>
 #include <string>
+#include <cstdlib>
+#include <sys/stat.h>
+#include <fstream>
+#include <filesystem>
 #include "cryptography.hpp"
 
+
+using namespace std;
 
 std::string hashFunction (std::string password){
     unsigned char hash[SHA256_DIGEST_LENGTH];
@@ -74,10 +85,41 @@ std::string hashFunction (std::string password){
 }
 
 
-void generateEnvironnementVariable(const char* VariableName ,std::string Valeur){
-    
-    setenv(VariableName, Valeur.c_str(), 1);
-    std::cout <<"done" << std::endl;
+void generateEnvironnementVariable(const char* VariableName, std::string Valeur){
+    std::string path = std::string(getenv("HOME")) + "/.myapp/";
+    struct stat st = {0};
+    if (stat(path.c_str(), &st) == -1) {
+        mkdir(path.c_str(), 0700); // Créer le dossier avec les permissions restreintes
+    }
+    std::ofstream file;
+    path += VariableName;
+    file.open(path, std::ios::out | std::ios::binary);
+    if (file.is_open()) {
+        file.write(Valeur.c_str(), Valeur.size());
+        file.close();
+        chmod(path.c_str(), S_IRUSR | S_IWUSR); // Restreindre les permissions d'accès au fichier
+    } else {
+        std::cerr << "Erreur lors de l'ouverture du fichier in generate function " << VariableName << std::endl;
+        exit(1);
+    }
+}
+
+std::string ReadFromFile(std::string filename){
+    std::ifstream file;
+    std::string path = std::string(getenv("HOME")) + "/.myapp/" + filename;
+    file.open(path, std::ios::in | std::ios::binary);
+    if (file.is_open()) {
+        std::string value;
+        file.seekg(0, std::ios::end);
+        value.reserve(file.tellg());
+        file.seekg(0, std::ios::beg);
+        value.assign((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+        file.close();
+        return value;
+    } else {
+        std::cerr << "Erreur lors de l'ouverture du fichier " << filename << std::endl;
+        exit(1);
+    }
 }
 
 void GENERATE_AES_KEY(){
@@ -99,15 +141,41 @@ void GENERATE_AES_KEY(){
     const char* environnement_variable = std::getenv("AES_KEY");
     if (environnement_variable == NULL){
         std::string key_string(reinterpret_cast<char*>(key), sizeof(key));
-        setenv("AES_KEY", key_string.c_str(), 1);
+        generateEnvironnementVariable("aes_key.bin", key_string);
     }
-    else{  //delete important informations from RAM
-        // Note: It's not recommended to use 'delete[]' for memory not allocated by 'new[]'
-        // You can use 'memset()' to zero the memory before returning it to the system
+    else{  
         memset(key, 0, sizeof(key));
     }
 }
+std::string decrypt(std::string data, std::string key){
+    std::string decryptData;
+    unsigned char iv[AES_BLOCK_SIZE/8];
+    unsigned char key_decrypt[AES_KEY_LENGTH/8];
+    memcpy(key_decrypt, key.c_str(), sizeof(key_decrypt));
+    AES_KEY aes_key;
+    AES_set_decrypt_key(key_decrypt, sizeof(key_decrypt)*8, &aes_key);
+    unsigned char decrypted_text[data.size()];
+    AES_cbc_encrypt((unsigned char*)data.c_str(), decrypted_text, data.size(), &aes_key, iv, AES_DECRYPT);
+    decryptData = (char*)decrypted_text;
+    return decryptData;
 
-std::string encrypt (unsigned char * key , std::string data){
+}
+std::string encrypt(std::string data, std::string target){
+    if (target == " Create_User"){
+        std::string encryptData;
+        std::string key = ReadFromFile("AES_KEk.bin");
+        unsigned char iv[AES_BLOCK_SIZE/8];
+    }
 
+    else{
+        std::string encryptData;
+        std::string key = ReadFromFile("AES_KEY.bin");
+        std::string key_decrypt=ReadFromFile("AES_KEk.bin");
+        std::string decrypted_key=decrypt(key,key_decrypt);
+        unsigned char iv[AES_BLOCK_SIZE/8];
+    }
+    
+
+
+    return encryptData ;
 }

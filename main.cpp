@@ -3,22 +3,29 @@
 #include "cryptography.hpp"
 #include "environnement.hpp"
 #include <sqlite3.h>
+#include <cstdlib>
+
+using namespace std;
 
 bool login(std::string username, std::string password){
     return true;
 }
+#include <fstream>
+#include <cstdlib>
+#include <iostream>
+#include <stdexcept>
 
-bool isRegistered()
-{
-    char* key = getenv("AES_KEY");
-    std::string keyString = std::string(key);
-    std::cout <<key <<endl;
-    if(!key){
+bool isRegistered() {
+    std::ifstream file (std::string(getenv("HOME")) + "/.myapp/aes_key.bin");
+    if (file.good()) {
+        file.close();
+        return true;
+    }
+    else {
         return false;
     }
-    memset(key, 0, strlen(key)); // effacer la valeur de la variable dans la mémoire
-    return true;
 }
+
 
 int main(){
     

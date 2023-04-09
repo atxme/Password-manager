@@ -46,6 +46,11 @@
 #include <openssl/rand.h>
 #endif
 
+#ifndef __include_fstream__
+#define __include_fstream__
+#include <fstream>
+#endif
+
 #ifndef __include_sha_h__
 #define __include_sha_h__
 #include <openssl/sha.h>
@@ -55,8 +60,11 @@
 #define CRYPTOGRAPHY_HPP   
 #endif 
 
+using namespace std;
+
 void generateEnvironnementVariable(const char* VariableName ,std::string Valeur);
 void GENERATE_AES_KEY();
 std::string hashFunction(std::string password);
 std::string returnKey();
+std::string ReadFromFile(std::string filename);
 std::string encrypt(std::string password);  

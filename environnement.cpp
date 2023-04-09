@@ -18,6 +18,11 @@
 #include "cryptography.hpp"
 #endif
 
+#ifndef __include_fstream__
+#define __include_fstream__
+#include <fstream>
+#endif
+
 #ifndef __include_gtk__
 #define __include_gtk__
 #include <gtk-3.0/gtk/gtkx.h>
@@ -41,7 +46,6 @@ namespace LoginEnvironnement {
 }
 
 
-
 void LoginEnvironnement::Interface::togglePassword(GtkWidget *widget, gpointer data) {
     GtkWidget *entry = GTK_WIDGET(data);
     if (gtk_entry_get_visibility(GTK_ENTRY(entry))) {
@@ -59,7 +63,7 @@ void LoginEnvironnement::Interface::buttonClicked(GtkWidget *widget, gpointer da
     entry_text = gtk_entry_get_text(GTK_ENTRY(data));
     std::string password = std::string (entry_text);
     hashpassword = hashFunction(password);
-    generateEnvironnementVariable("HASH_LOGIN", hashpassword);
+    generateEnvironnementVariable("hash_login.bin", hashpassword);
     GENERATE_AES_KEY();
     
 }

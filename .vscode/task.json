@@ -4,7 +4,7 @@
         {
             "label": "Build",
             "type": "shell",
-            "command": "g++ main.cpp -o PasswordManager `pkg-config --cflags gtk+-3.0` `pkg-config --libs gtk+-3.0` ",
+            "command": "g++ -o passwordManager main.cpp environnement.cpp cryptography.cpp `pkg-config --cflags --libs gtk+-3.0` -lssl -lcrypto ",
             "group": {
                 "kind": "build",
                 "isDefault": true

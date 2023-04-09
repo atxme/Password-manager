@@ -25,6 +25,11 @@
 #include <gtk-3.0/gtk/gtkx.h>
 #endif
 
+#ifndef __include_fstream__
+#define __include_fstream__
+#include <fstream>
+#endif
+
 using namespace std;
 
 namespace LoginEnvironnement {
