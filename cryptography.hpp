@@ -58,13 +58,18 @@
 
 #ifndef CRYPTOGRAPHY_HPP
 #define CRYPTOGRAPHY_HPP   
-#endif 
+
 
 using namespace std;
 
 void generateEnvironnementVariable(const char* VariableName ,std::string Valeur);
-void GENERATE_AES_KEY();
+void GENERATE_AES_KEY(std::string nameKeyFile);
+std::string ReadFromFile(std::string filename);
 std::string hashFunction(std::string password);
 std::string returnKey();
 std::string ReadFromFile(std::string filename);
-std::string encrypt(std::string password);  
+std::string encrypt(std::string data, std::string target);
+std::string encrypt(std::string data, std::string target);  
+
+
+#endif // CRYPTOGRAPHY_HPP

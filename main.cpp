@@ -16,29 +16,22 @@ bool login(std::string username, std::string password){
 #include <stdexcept>
 
 bool isRegistered() {
-    std::ifstream file (std::string(getenv("HOME")) + "/.myapp/aes_key.bin");
-    if (file.good()) {
-        file.close();
-        return true;
-    }
-    else {
-        return false;
-    }
+    std::ifstream file(std::string(getenv("HOME")) + "/.myapp/aes_key.bin");
+    return file.good() ? true : false;
 }
 
-
-int main(){
-    
+int main() {
     bool registered = isRegistered();
-    if(!registered){
-        LoginEnvironnement::Interface interface;
-        interface.createUser();
+    if (registered) {
+        std::cout << "User is registered" << std::endl;
+    } else {
+        GENERATE_AES_KEY("aes_kek.bin");
+        GENERATE_AES_KEY("aes_key.bin");
+        cout << "generation done "<< endl;
+        LoginEnvironnement::Interface().createUser();
     }
-    else {
-
-        
-    }
-    
-   return 0;
+    return 0;
 }
+
+
 

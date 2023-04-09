@@ -45,7 +45,6 @@ namespace LoginEnvironnement {
 
 }
 
-
 void LoginEnvironnement::Interface::togglePassword(GtkWidget *widget, gpointer data) {
     GtkWidget *entry = GTK_WIDGET(data);
     if (gtk_entry_get_visibility(GTK_ENTRY(entry))) {
@@ -63,8 +62,9 @@ void LoginEnvironnement::Interface::buttonClicked(GtkWidget *widget, gpointer da
     entry_text = gtk_entry_get_text(GTK_ENTRY(data));
     std::string password = std::string (entry_text);
     hashpassword = hashFunction(password);
-    generateEnvironnementVariable("hash_login.bin", hashpassword);
-    GENERATE_AES_KEY();
+    std::string encryptPassword=encrypt(hashpassword,"Create_User");
+    generateEnvironnementVariable("hash_login.bin",encryptPassword);
+    
     
 }
 
