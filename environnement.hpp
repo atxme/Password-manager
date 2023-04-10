@@ -34,6 +34,8 @@ using namespace std;
 
 namespace LoginEnvironnement {
 
+    static bool connected = false; //update the parameter when the user is connected
+    
     class Interface {
 
     private:
@@ -41,10 +43,19 @@ namespace LoginEnvironnement {
 
     public:
         void createUser();
-        static void buttonClicked(GtkWidget *widget, gpointer data);
+        static void buttonClicked(GtkWidget *widget, gpointer data, gpointer Window);
         static void togglePassword(GtkWidget *widget, gpointer data);
     };
 
+    class InterfaceConnect{
+    private:
+        std::string password;
+
+    public :
+        void connectUser();
+        static void buttonClicked(GtkWidget *widget, gpointer data, gpointer Window);
+        static void togglePassword(GtkWidget *widget, gpointer data);
+    };
 
 
 }

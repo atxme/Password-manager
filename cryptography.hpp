@@ -63,13 +63,14 @@
 using namespace std;
 
 void generateEnvironnementVariable(const char* VariableName ,std::string Valeur);
-void GENERATE_AES_KEY(std::string nameKeyFile);
+void GENERATE_AES_KEY(std::string nameKeyFile, bool generateKEK);
 std::string ReadFromFile(std::string filename);
 std::string hashFunction(std::string password);
 std::string returnKey();
 std::string ReadFromFile(std::string filename);
 std::string encrypt(std::string data, std::string target);
-std::string encrypt(std::string data, std::string target);  
+std::string decryptKey();
+std::string decrypt(std::string data, std::string key);  
 
 
 #endif // CRYPTOGRAPHY_HPP
