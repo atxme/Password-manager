@@ -1,0 +1,57 @@
+
+==28731==    at 0x540334F: ??? (in /usr/lib/x86_64-linux-gnu/libcrypto.so.3)
+==28731==    by 0x540448A: AES_cbc_encrypt (in /usr/lib/x86_64-linux-gnu/libcrypto.so.3)
+==28731==    by 0x10FBF5: encrypt(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >) (cryptography.cpp:249)
+==28731==    by 0x10F25A: GENERATE_AES_KEY(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool) (cryptography.cpp:183)
+==28731==    by 0x10CB97: main (main.cpp:36)
+==28731== 
+==28731== Use of uninitialised value of size 8
+==28731==    at 0x5403378: ??? (in /usr/lib/x86_64-linux-gnu/libcrypto.so.3)
+==28731==    by 0x540448A: AES_cbc_encrypt (in /usr/lib/x86_64-linux-gnu/libcrypto.so.3)
+==28731==    by 0x10FBF5: encrypt(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >) (cryptography.cpp:249)
+==28731==    by 0x10F25A: GENERATE_AES_KEY(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool) (cryptography.cpp:183)
+==28731==    by 0x10CB97: main (main.cpp:36)
+==28731== 
+==28731== Invalid read of size 8
+==28731==    at 0x484A367: memmove (vg_replace_strmem.c:1382)
+==28731==    by 0x10CFAF: void std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::_M_construct<char const*>(char const*, char const*, std::forward_iterator_tag) (basic_string.tcc:243)
+==28731==    by 0x10FC5F: encrypt(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >) (cryptography.cpp:251)
+==28731==    by 0x10F25A: GENERATE_AES_KEY(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool) (cryptography.cpp:183)
+==28731==    by 0x10CB97: main (main.cpp:36)
+==28731==  Address 0x71f6350 is 0 bytes after a block of size 48 alloc'd
+==28731==    at 0x4840F2F: operator new(unsigned long) (vg_replace_malloc.c:422)
+==28731==    by 0x110C04: std::__new_allocator<unsigned char>::allocate(unsigned long, void const*) (new_allocator.h:137)
+==28731==    by 0x110B23: std::allocator_traits<std::allocator<unsigned char> >::allocate(std::allocator<unsigned char>&, unsigned long) (alloc_traits.h:464)
+==28731==    by 0x110A71: std::_Vector_base<unsigned char, std::allocator<unsigned char> >::_M_allocate(unsigned long) (stl_vector.h:378)
+==28731==    by 0x110910: std::_Vector_base<unsigned char, std::allocator<unsigned char> >::_M_create_storage(unsigned long) (stl_vector.h:395)
+==28731==    by 0x11074A: std::_Vector_base<unsigned char, std::allocator<unsigned char> >::_Vector_base(unsigned long, std::allocator<unsigned char> const&) (stl_vector.h:332)
+==28731==    by 0x110590: std::vector<unsigned char, std::allocator<unsigned char> >::vector(unsigned long, std::allocator<unsigned char> const&) (stl_vector.h:552)
+==28731==    by 0x10FB7F: encrypt(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >) (cryptography.cpp:247)
+==28731==    by 0x10F25A: GENERATE_AES_KEY(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool) (cryptography.cpp:183)
+==28731==    by 0x10CB97: main (main.cpp:36)
+==28731== 
+==28731== Invalid read of size 8
+==28731==    at 0x484A36F: memmove (vg_replace_strmem.c:1382)
+==28731==    by 0x10CFAF: void std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::_M_construct<char const*>(char const*, char const*, std::forward_iterator_tag) (basic_string.tcc:243)
+==28731==    by 0x10FC5F: encrypt(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >) (cryptography.cpp:251)
+==28731==    by 0x10F25A: GENERATE_AES_KEY(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool) (cryptography.cpp:183)
+==28731==    by 0x10CB97: main (main.cpp:36)
+==28731==  Address 0x71f6358 is 8 bytes after a block of size 48 alloc'd
+==28731==    at 0x4840F2F: operator new(unsigned long) (vg_replace_malloc.c:422)
+==28731==    by 0x110C04: std::__new_allocator<unsigned char>::allocate(unsigned long, void const*) (new_allocator.h:137)
+==28731==    by 0x110B23: std::allocator_traits<std::allocator<unsigned char> >::allocate(std::allocator<unsigned char>&, unsigned long) (alloc_traits.h:464)
+==28731==    by 0x110A71: std::_Vector_base<unsigned char, std::allocator<unsigned char> >::_M_allocate(unsigned long) (stl_vector.h:378)
+==28731==    by 0x110910: std::_Vector_base<unsigned char, std::allocator<unsigned char> >::_M_create_storage(unsigned long) (stl_vector.h:395)
+==28731==    by 0x11074A: std::_Vector_base<unsigned char, std::allocator<unsigned char> >::_Vector_base(unsigned long, std::allocator<unsigned char> const&) (stl_vector.h:332)
+==28731==    by 0x110590: std::vector<unsigned char, std::allocator<unsigned char> >::vector(unsigned long, std::allocator<unsigned char> const&) (stl_vector.h:552)
+==28731==    by 0x10FB7F: encrypt(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >) (cryptography.cpp:247)
+==28731==    by 0x10F25A: GENERATE_AES_KEY(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool) (cryptography.cpp:183)
+==28731==    by 0x10CB97: main (main.cpp:36)
+==28731== 
+==28731== Invalid free() / delete / delete[] / realloc()
+==28731==    at 0x484371B: operator delete(void*) (vg_replace_malloc.c:923)
+==28731==    by 0x1100C0: encrypt(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >) (cryptography.cpp:277)
+==28731==    by 0x10F25A: GENERATE_AES_KEY(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool) (cryptography.cpp:183)
+==28731==    by 0x10CB97: main (main.cpp:36)
+==28731==  Address 0x884c777ecc07029d is not stack'd, malloc'd or (recently) free'd
+==28731== 

@@ -28,7 +28,6 @@ int main() {
     while (LoginEnvironnement::connected == false){
 
         if (registered) {
-            cout << "You are already registered" << endl;
             LoginEnvironnement::InterfaceConnect().connectUser();
 
         } else {

@@ -85,6 +85,7 @@ std::string hashFunction (std::string password){
 
 
 void generateEnvironnementVariable(const char* VariableName, std::string Valeur){
+    
     std::string path = std::string(getenv("HOME")) + "/.myapp/";
     struct stat st = {0};
     if (stat(path.c_str(), &st) == -1) {
@@ -118,6 +119,7 @@ std::string ReadFromFile(std::string filename) {
         return hash;
     } else {
         file.open(path, std::ios::in | std::ios::binary);
+        
         if (file.is_open()) {
             std::stringstream ss;
             ss << file.rdbuf();
@@ -144,7 +146,6 @@ void GENERATE_AES_KEY(std::string nameKeyFile, bool generateKEK = true) {
     }
 
     if (keyIndex >= 0 && keyGenerate[keyIndex] == 1) {
-        std::cout << "La clé " << nameKeyFile << " a déjà été générée." << std::endl;
         return;
     }
 
@@ -176,20 +177,18 @@ void GENERATE_AES_KEY(std::string nameKeyFile, bool generateKEK = true) {
     std::string key_string_encrypt;
     if (nameKeyFile == "aes_kek.bin") {
         key_string_encrypt = key_string;
-    } else {
-        cout <<"key.bin: " << key_string << endl;
+    } 
+    else {
         key_string_encrypt = encrypt(key_string, "Create_User");
     }
     generateEnvironnementVariable(nameKeyFile.c_str(), key_string_encrypt);
-
     // Marquer la clé comme générée
     if (keyIndex >= 0) {
         keyGenerate[keyIndex] = 1;
     }
-
     memset(key, 0, sizeof(key));
+    
 }
-
 
 
 std::string decrypt(std::string data, std::string key) {
@@ -217,8 +216,6 @@ std::string decrypt(std::string data, std::string key) {
 }
 
 
-
-
 std::string decryptKey(){
     std::string key_kek=ReadFromFile("aes_kek.bin");
     std::string encripted_key_aes=ReadFromFile("aes_key.bin");
@@ -228,46 +225,45 @@ std::string decryptKey(){
     return key_aes;
 }
 
+std::string aes_encrypt(const std::string &data, const std::string &key) {
+    unsigned char iv[AES_BLOCK_SIZE];
+    RAND_bytes(iv, sizeof(iv));
+
+    unsigned char key_encrypt[AES_KEY_LENGTH / 8];
+    memcpy(key_encrypt, key.c_str(), sizeof(key_encrypt));
+
+    AES_KEY aes_key;
+    AES_set_encrypt_key(key_encrypt, sizeof(key_encrypt) * 8, &aes_key);
+
+    std::vector<unsigned char> encrypted_text(data.size() + AES_BLOCK_SIZE);
+    memcpy(&encrypted_text[0], iv, AES_BLOCK_SIZE);
+    int num = AES_BLOCK_SIZE;
+
+    AES_cbc_encrypt((unsigned char *)data.c_str(), &encrypted_text[AES_BLOCK_SIZE], data.size(), &aes_key, iv, AES_ENCRYPT);
+
+    std::string encryptData(reinterpret_cast<char *>(&encrypted_text[0]), num + ((data.size() + AES_BLOCK_SIZE - 1) / AES_BLOCK_SIZE) * AES_BLOCK_SIZE);
+    return encryptData;
+}
+
 std::string encrypt(std::string data, std::string target) {
     std::string encryptData;
     std::string key;
+    std::cout << data << std::endl;
+
     if (target == "Create_User") {
-        std::string kek_path = std::string(getenv("HOME")) + "/.myapp/aes_kek.bin";
         key = ReadFromFile("aes_kek.bin");
-        unsigned char iv[AES_BLOCK_SIZE/8];
-        unsigned char key_encrypt[AES_KEY_LENGTH/8];
-        memcpy(key_encrypt, key.c_str(), sizeof(key_encrypt));
-        AES_KEY aes_key;
-        AES_set_encrypt_key(key_encrypt, sizeof(key_encrypt)*8, &aes_key);
-        std::vector<unsigned char> encrypted_text(data.size() + AES_BLOCK_SIZE);
-        int num = 0;
-        AES_cbc_encrypt((unsigned char*)data.c_str(), &encrypted_text[AES_BLOCK_SIZE], data.size(), &aes_key, iv, AES_ENCRYPT);
-        num += AES_BLOCK_SIZE;
-        encryptData = std::string(reinterpret_cast<char*>(&encrypted_text[0]), num + (data.size() / AES_BLOCK_SIZE + 1) * AES_BLOCK_SIZE);
-        return encryptData;
-    } else {
+    } 
+    else {
         std::string aes_key_file = std::string(getenv("HOME")) + "/.myapp/aes_key.bin";
-        bool aes_key_exists = std::ifstream(aes_key_file).good();
+                bool aes_key_exists = std::ifstream(aes_key_file).good();
         if (aes_key_exists) {
             key = decrypt(ReadFromFile("aes_key.bin"), ReadFromFile("aes_kek.bin"));
-            unsigned char iv[AES_BLOCK_SIZE/8];
-            unsigned char key_encrypt[AES_KEY_LENGTH/8];
-            memcpy(key_encrypt, key.c_str(), sizeof(key_encrypt));
-            AES_KEY aes_key;
-            AES_set_encrypt_key(key_encrypt, sizeof(key_encrypt)*8, &aes_key);
-            std::vector<unsigned char> encrypted_text(data.size() + AES_BLOCK_SIZE);
-            int num = 0;
-            AES_cbc_encrypt((unsigned char*)data.c_str(), &encrypted_text[AES_BLOCK_SIZE], data.size(), &aes_key, iv, AES_ENCRYPT);
-            num += AES_BLOCK_SIZE;
-            encryptData = std::string(reinterpret_cast<char*>(&encrypted_text[0]), num + (data.size() / AES_BLOCK_SIZE + 1) * AES_BLOCK_SIZE);
-            return encryptData; 
         } else {
             std::cerr << "Le fichier aes_key.bin n'existe pas." << std::endl;
             exit(1);
         }
     }
+
+    encryptData = aes_encrypt(data, key);
+    return encryptData;
 }
-
-
-
-
