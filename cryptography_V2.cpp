@@ -574,6 +574,7 @@ std::string cryptography::encryption::RSA::decrypt(const std::string& encryptedD
 }
 
 
+// elliptic_curve fuctions 
 
 
 
