@@ -62,15 +62,19 @@
 
 using namespace std;
 
-void generateEnvironnementVariable(const char* VariableName ,std::string Valeur);
-void GENERATE_AES_KEY(std::string nameKeyFile, bool generateKEK);
+std::string hashFunction (std::string password);
+std::string binaryToHex(const std::string &binary);
+void generateEnvironnementVariable(const char* VariableName, std::string Valeur);
 std::string ReadFromFile(std::string filename);
-std::string hashFunction(std::string password);
-std::string returnKey();
-std::string ReadFromFile(std::string filename);
-std::string encrypt(std::string data, std::string target);
+void GENERATE_AES_KEY(std::string nameKeyFile, bool generateKEK );
+std::string decrypt(const std::string &data, const std::string &key);
 std::string decryptKey();
-std::string decrypt(std::string data, std::string key);  
+std::vector<unsigned char> aes_encrypt(const std::vector<unsigned char> &data, const std::vector<unsigned char> &key, const std::vector<unsigned char> &iv);
+std::vector<unsigned char> pkcs7_pad(const std::vector<unsigned char> &data);
+std::vector<unsigned char> pkcs7_unpad(const std::vector<unsigned char> &data);
+std::vector<unsigned char> encrypt(const std::vector<unsigned char> &data, const std::string &target);
+std::vector<unsigned char> aes_decrypt(const std::vector<unsigned char> &encrypted_data, const std::vector<unsigned char> &key, const std::vector<unsigned char> &iv);
+std::vector<unsigned char> decrypt(const std::vector<unsigned char> &data, const std::vector<unsigned char> &key);
 
 
 #endif // CRYPTOGRAPHY_HPP

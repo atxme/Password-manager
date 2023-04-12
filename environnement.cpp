@@ -77,10 +77,8 @@ void LoginEnvironnement::Interface::buttonClicked(GtkWidget *widget, gpointer da
     entry_text = gtk_entry_get_text(GTK_ENTRY(data));
     std::string password = std::string(entry_text);
     hashpassword = hashFunction(password);
-    cout << "le hash normal "<< hashpassword << endl;
-    std::string encryptPassword = encrypt(hashpassword, "Create_User");
-    cout << "le hash encrypter "<< encryptPassword << endl;
-    generateEnvironnementVariable("hash_login.bin", encryptPassword);
+    std::vector<unsigned char> encryptPassword = encrypt(std::vector<unsigned char>(hashpassword.begin(), hashpassword.end()), "Create_User");
+    generateEnvironnementVariable("hash_login.bin", std::string(encryptPassword.begin(), encryptPassword.end()));
     gtk_main_quit(); // quitter le main loop de GTK+
 }
 
@@ -183,30 +181,6 @@ void LoginEnvironnement::InterfaceConnect::buttonClicked(GtkWidget *widget, gpoi
 
     memset(&key[0], 0, key.size()); //delete the key from memory after use
 
-
-   //a delete 
-
-    std::string hashpassword_hex = "";
-    for (size_t i = 0; i < hashpassword.size(); ++i) {
-        char hex_byte[3];
-        snprintf(hex_byte, sizeof(hex_byte), "%02x", static_cast<unsigned char>(hashpassword[i]));
-        hashpassword_hex += hex_byte;
-    }
-
-    std::string hashReference_hex = "";
-    for (size_t i = 0; i < hashReference.size(); ++i) {
-        char hex_byte[3];
-        snprintf(hex_byte, sizeof(hex_byte), "%02x", static_cast<unsigned char>(hashReference[i]));
-        hashReference_hex += hex_byte;
-    }
-
-    std::cout << "hashpassword (hex): " << hashpassword_hex << std::endl;
-    std::cout << "hashReference (hex): " << hashReference_hex << std::endl;
-
-
-    // a deletre 
-
-
     if (hashpassword == hashReference) { 
         connected=true;       
         gtk_main_quit(); // quitter le main loop de GTK+
@@ -215,6 +189,7 @@ void LoginEnvironnement::InterfaceConnect::buttonClicked(GtkWidget *widget, gpoi
         std::cout << "Password is incorrect" << std::endl;
     }   
 }
+
 
 void LoginEnvironnement::InterfaceConnect::connectUser(){
     GtkWidget *connectUserwindow;

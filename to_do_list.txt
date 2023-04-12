@@ -1,0 +1,5 @@
+    Générer une clé de chiffrement AES-256 de manière aléatoire à l'aide d'OpenSSL
+    Implémenter les fonctions de padding PKCS7 pour ajouter des octets de bourrage pour atteindre la longueur de bloc AES-256
+    Implémenter la fonction de chiffrement AES-256
+    Implémenter la fonction de déchiffrement AES-256
+    Tester le chiffrement/déchiffrement en utilisant des données d'entrée connues et des clés de chiffrement/déchiffrement générées aléatoirement. Vérifier que les résultats de chiffrement/déchiffrement sont identiques.

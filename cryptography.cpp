@@ -69,6 +69,7 @@
 #include "cryptography.hpp"
 
 
+
 using namespace std;
 
 std::string hashFunction (std::string password){
@@ -81,6 +82,16 @@ std::string hashFunction (std::string password){
     for(int i = 0; i < SHA256_DIGEST_LENGTH; i++)
         sprintf(&mdString[i*2], "%02x", (unsigned int)hash[i]);
     return mdString;
+}
+
+std::string binaryToHex(const std::string &binary) {
+    std::string hex;
+    for (const auto &byte : binary) {
+        char buf[3];
+        snprintf(buf, sizeof(buf), "%02x", static_cast<unsigned char>(byte));
+        hex.append(buf);
+    }
+    return hex;
 }
 
 
@@ -179,7 +190,8 @@ void GENERATE_AES_KEY(std::string nameKeyFile, bool generateKEK = true) {
         key_string_encrypt = key_string;
     } 
     else {
-        key_string_encrypt = encrypt(key_string, "Create_User");
+        std::vector<unsigned char> key_string_encrypt = encrypt(std::vector<unsigned char>(key_string.begin(), key_string.end()), "Create_User");
+
     }
     generateEnvironnementVariable(nameKeyFile.c_str(), key_string_encrypt);
     // Marquer la clé comme générée
@@ -191,9 +203,9 @@ void GENERATE_AES_KEY(std::string nameKeyFile, bool generateKEK = true) {
 }
 
 
-std::string decrypt(std::string data, std::string key) {
-    std::string decryptData;
-    unsigned char iv[AES_BLOCK_SIZE];
+std::string decrypt(const std::string &data, const std::string &key) {
+    std::string decryptedData;
+    unsigned char iv[AES_BLOCK_SIZE] = {0};
     unsigned char key_decrypt[AES_KEY_SIZE/8];
     memcpy(key_decrypt, key.c_str(), AES_KEY_SIZE/8);
     AES_KEY aes_key;
@@ -201,18 +213,18 @@ std::string decrypt(std::string data, std::string key) {
     int num = 0;
     while (num < data.size()) {
         unsigned char decrypted_text[AES_BLOCK_SIZE];
-        AES_decrypt((unsigned char*)(&data[num]), decrypted_text, &aes_key);
-        for (int i = 0; i < AES_BLOCK_SIZE; ++i) {
-            decrypted_text[i] ^= iv[i];
-            iv[i] = data[num + i];
-        }
-        decryptData.append((char*)decrypted_text, AES_BLOCK_SIZE);
+        AES_cbc_encrypt((const unsigned char*)(&data[num]), decrypted_text, AES_BLOCK_SIZE, &aes_key, iv, AES_DECRYPT);
+        decryptedData.append((char*)decrypted_text, AES_BLOCK_SIZE);
         num += AES_BLOCK_SIZE;
     }
-    // Enlevez le padding
-    int padding = (int)decryptData.back();
-    decryptData.erase(decryptData.end() - padding, decryptData.end());
-    return decryptData;
+
+    // Remove padding (PKCS#7)
+    size_t padding_length = static_cast<size_t>(decryptedData.back());
+    if (padding_length > 0 && padding_length <= AES_BLOCK_SIZE) {
+        decryptedData.erase(decryptedData.end() - padding_length, decryptedData.end());
+    }
+
+    return decryptedData;
 }
 
 
@@ -225,45 +237,106 @@ std::string decryptKey(){
     return key_aes;
 }
 
-std::string aes_encrypt(const std::string &data, const std::string &key) {
-    unsigned char iv[AES_BLOCK_SIZE];
-    RAND_bytes(iv, sizeof(iv));
+std::vector<unsigned char> aes_encrypt(const std::vector<unsigned char> &data, const std::vector<unsigned char> &key, const std::vector<unsigned char> &iv) {
+    std::vector<unsigned char> encrypted_data(data.size() + AES_BLOCK_SIZE);
 
-    unsigned char key_encrypt[AES_KEY_LENGTH / 8];
-    memcpy(key_encrypt, key.c_str(), sizeof(key_encrypt));
+    memcpy(&encrypted_data[0], iv.data(), AES_BLOCK_SIZE);
 
     AES_KEY aes_key;
-    AES_set_encrypt_key(key_encrypt, sizeof(key_encrypt) * 8, &aes_key);
+    AES_set_encrypt_key(key.data(), key.size() * 8, &aes_key);
 
-    std::vector<unsigned char> encrypted_text(data.size() + AES_BLOCK_SIZE);
-    memcpy(&encrypted_text[0], iv, AES_BLOCK_SIZE);
-    int num = AES_BLOCK_SIZE;
+    AES_cbc_encrypt(data.data(), encrypted_data.data() + AES_BLOCK_SIZE, data.size(), &aes_key, const_cast<unsigned char*>(iv.data()), AES_ENCRYPT);
 
-    AES_cbc_encrypt((unsigned char *)data.c_str(), &encrypted_text[AES_BLOCK_SIZE], data.size(), &aes_key, iv, AES_ENCRYPT);
-
-    std::string encryptData(reinterpret_cast<char *>(&encrypted_text[0]), num + ((data.size() + AES_BLOCK_SIZE - 1) / AES_BLOCK_SIZE) * AES_BLOCK_SIZE);
-    return encryptData;
+    return encrypted_data;
 }
 
-std::string encrypt(std::string data, std::string target) {
-    std::string encryptData;
-    std::string key;
-    std::cout << data << std::endl;
+
+std::vector<unsigned char> pkcs7_pad(const std::vector<unsigned char> &data) {
+    size_t padding_length = AES_BLOCK_SIZE - (data.size() % AES_BLOCK_SIZE);
+    std::vector<unsigned char> padded_data(data);
+    padded_data.insert(padded_data.end(), padding_length, static_cast<unsigned char>(padding_length));
+    return padded_data;
+}
+
+std::vector<unsigned char> pkcs7_unpad(const std::vector<unsigned char> &data) {
+    size_t padding_length = static_cast<size_t>(data.back());
+    std::vector<unsigned char> unpadded_data(data.begin(), data.end() - padding_length);
+    return unpadded_data;
+}
+
+std::vector<unsigned char> encrypt(const std::vector<unsigned char> &data, const std::string &target) {
+    std::vector<unsigned char> encrypted_data;
+    std::vector<unsigned char> key;
 
     if (target == "Create_User") {
-        key = ReadFromFile("aes_kek.bin");
-    } 
-    else {
+        key = std::vector<unsigned char>(ReadFromFile("aes_kek.bin").begin(), ReadFromFile("aes_kek.bin").end());
+    } else {
         std::string aes_key_file = std::string(getenv("HOME")) + "/.myapp/aes_key.bin";
-                bool aes_key_exists = std::ifstream(aes_key_file).good();
+        bool aes_key_exists = std::ifstream(aes_key_file).good();
         if (aes_key_exists) {
-            key = decrypt(ReadFromFile("aes_key.bin"), ReadFromFile("aes_kek.bin"));
+            key = std::vector<unsigned char>(decrypt(ReadFromFile("aes_key.bin"), ReadFromFile("aes_kek.bin")).begin(), decrypt(ReadFromFile("aes_key.bin"), ReadFromFile("aes_kek.bin")).end());
+
         } else {
             std::cerr << "Le fichier aes_key.bin n'existe pas." << std::endl;
             exit(1);
         }
     }
 
-    encryptData = aes_encrypt(data, key);
-    return encryptData;
+    std::vector<unsigned char> padded_data = pkcs7_pad(data);
+
+    // Utiliser un IV fixe
+    std::vector<unsigned char> iv(AES_BLOCK_SIZE, 0);
+
+    encrypted_data = aes_encrypt(padded_data, key, iv);
+
+    // Insérer l'IV au début des données chiffrées
+    encrypted_data.insert(encrypted_data.begin(), iv.begin(), iv.end());
+
+    return encrypted_data;
+}
+
+
+std::vector<unsigned char> aes_decrypt(const std::vector<unsigned char> &encrypted_data, const std::vector<unsigned char> &key, const std::vector<unsigned char> &iv)
+{
+    if (encrypted_data.size() < AES_BLOCK_SIZE) {
+        throw std::runtime_error("Encrypted data is too short");
+    }
+
+    std::vector<unsigned char> iv_vec(AES_BLOCK_SIZE);
+    memcpy(iv_vec.data(), encrypted_data.data(), AES_BLOCK_SIZE);
+
+    size_t data_size = encrypted_data.size() - AES_BLOCK_SIZE;
+    std::vector<unsigned char> decrypted_data(data_size);
+
+    AES_KEY aes_key;
+    AES_set_decrypt_key(reinterpret_cast<const unsigned char*>(key.data()), key.size() * 8, &aes_key);
+
+    AES_cbc_encrypt(encrypted_data.data() + AES_BLOCK_SIZE, decrypted_data.data(), data_size, &aes_key, iv_vec.data(), AES_DECRYPT);
+
+    // Remove padding (PKCS#7)
+    size_t padding_length = static_cast<size_t>(decrypted_data.back());
+    if (padding_length > 0 && padding_length <= AES_BLOCK_SIZE) {
+        decrypted_data.erase(decrypted_data.end() - padding_length, decrypted_data.end());
+    } 
+    else {
+        throw std::runtime_error("Invalid padding length");
+    }
+
+    return decrypted_data;
+}
+
+
+std::vector<unsigned char> decrypt(const std::vector<unsigned char> &data, const std::vector<unsigned char> &key) {
+    std::vector<unsigned char> decrypted_data;
+
+    // Extraire l'IV du début des données chiffrées
+    std::vector<unsigned char> iv(data.begin(), data.begin() + AES_BLOCK_SIZE);
+
+    // Supprimer l'IV des données chiffrées
+    std::vector<unsigned char> encrypted_data(data.begin() + AES_BLOCK_SIZE, data.end());
+
+    decrypted_data = aes_decrypt(encrypted_data, key, iv);
+
+    std::vector<unsigned char> unpadded_data = pkcs7_unpad(decrypted_data);
+    return unpadded_data;
 }

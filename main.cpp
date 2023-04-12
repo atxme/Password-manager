@@ -25,7 +25,7 @@ bool isRegistered() {
 
 int main() {
     bool registered = isRegistered();
-    while (LoginEnvironnement::connected == false){
+    while (true){
 
         if (registered) {
             LoginEnvironnement::InterfaceConnect().connectUser();
