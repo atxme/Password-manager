@@ -175,9 +175,8 @@ namespace cryptography {
                 void GENERATE_EC_KEYPAIR(EC_KEY*& privateKey, EC_POINT*& publicKey);
                 void generateEnvironnementVariable(const char* VariableName, std::string Valeur);
                 std::string ReadFromFile(const std::string& filename);
-                std::string encrypt(const std::string& plaintext, const std::string& publicKeyFilename);
-                std::string decrypt(const std::string& encryptedData, const std::string& privateKeyPath, std::string& decryptedData);
-
+                std::string encrypt(const std::string& plaintext, const EC_POINT* publicKey);
+                std::string decrypt(const std::string& encryptedMessage, EC_KEY* privateKey);
         }
 
     }

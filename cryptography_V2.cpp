@@ -227,8 +227,8 @@ namespace cryptography {
                 void GENERATE_EC_KEYPAIR(EC_KEY*& privateKey, EC_POINT*& publicKey);
                 void generateEnvironnementVariable(const char* VariableName, std::string Valeur);
                 std::string ReadFromFile(const std::string& filename);
-                std::string encrypt(const std::string& plaintext, const std::string& publicKeyFilename);
-                std::string decrypt(const std::string& encryptedData, const std::string& privateKeyPath, std::string& decryptedData);
+                std::string encrypt(const std::string& plaintext, const EC_POINT* publicKey);
+                std::string decrypt(const std::string& encryptedMessage, EC_KEY* privateKey);
         }
     }
 }
@@ -664,13 +664,116 @@ std::string cryptography::encryption::elliptic_curve::ReadFromFile(const std::st
     }
 }
 
-std::string cryptography::encryption::elliptic_curve::encrypt(const std::string& plaintext, const EC_POINT* publicKey) {
-    // Implémentez ici la fonction de cryptage en utilisant OpenSSL
+std::string cryptography::encryption::elliptic_curve::encrypt(const std::string& plaintext, const EC_POINT* publicKey){
+    //Crée le groupe de la coube elliptique à utiliser
+    EC_GROUP* group = EC_GROUP_new_by_curve_name(NID_secp384r1);
+    
+    
+    // Générer une paire de clés éphémères
+    EC_KEY* ephemeralKey = EC_KEY_new_by_curve_name(NID_secp384r1);
+    EC_KEY_generate_key(ephemeralKey);
+    const EC_POINT* ephemeralPubKey = EC_KEY_get0_public_key(ephemeralKey);
+
+    // Calculer le secret partagé en utilisant ECDH
+    unsigned char secret[48];
+    ECDH_compute_key(secret, sizeof(secret), publicKey, ephemeralKey, NULL);
+
+    // Dérivation de la clé symétrique et de l'IV à partir du secret partagé en utilisant HKDF
+    unsigned char derivedKey[48];
+    size_t keyLen = sizeof(derivedKey);
+    EVP_PKEY_CTX* pctx = EVP_PKEY_CTX_new_id(EVP_PKEY_HKDF, NULL);
+    EVP_PKEY_derive_init(pctx);
+    EVP_PKEY_CTX_set_hkdf_md(pctx, EVP_sha384());
+    EVP_PKEY_CTX_set1_hkdf_salt(pctx, "ECIES", 5); // Utiliser "ECIES" comme sel
+    EVP_PKEY_CTX_set1_hkdf_key(pctx, secret, sizeof(secret));
+    EVP_PKEY_CTX_add1_hkdf_info(pctx, "KeyIV", 5); // Utiliser "KeyIV" comme info HKDF
+    EVP_PKEY_derive(pctx, derivedKey, &keyLen);
+    EVP_PKEY_CTX_free(pctx);
+
+    // Chiffrer le texte en clair avec AES-256-GCM
+    EVP_CIPHER_CTX* cipherCtx = EVP_CIPHER_CTX_new();
+    EVP_EncryptInit(cipherCtx, EVP_aes_256_gcm(), derivedKey, derivedKey + 32);
+    unsigned char ciphertext[plaintext.size()];
+    int outlen;
+    EVP_EncryptUpdate(cipherCtx, ciphertext, &outlen, reinterpret_cast<const unsigned char*>(plaintext.data()), plaintext.size());
+
+    // Obtenir le tag d'authentification
+    unsigned char tag[16];
+    EVP_CIPHER_CTX_ctrl(cipherCtx, EVP_CTRL_GCM_GET_TAG, 16, tag);
+    EVP_CIPHER_CTX_free(cipherCtx);
+
+    // Convertir la clé publique éphémère en une représentation binaire
+    size_t ephemeralKeySize = EC_POINT_point2oct(group, ephemeralPubKey, POINT_CONVERSION_UNCOMPRESSED, NULL, 0, NULL);
+    std::vector<unsigned char> ephemeralKeyBytes(ephemeralKeySize);
+    EC_POINT_point2oct(group, ephemeralPubKey, POINT_CONVERSION_UNCOMPRESSED, ephemeralKeyBytes.data(), ephemeralKeySize, NULL);
+
+    std::string encryptedMessage;
+    encryptedMessage.reserve(ephemeralKeySize + plaintext.size() + 16);
+    encryptedMessage.append(reinterpret_cast<char*>(ephemeralKeyBytes.data()), ephemeralKeySize);
+    encryptedMessage.append(reinterpret_cast<char*>(ciphertext), plaintext.size());
+    encryptedMessage.append(reinterpret_cast<char*>(tag), 16);
+
+    // Nettoyer les ressources
+    EC_KEY_free(ephemeralKey);
+    EC_GROUP_free(group);
+
+    return encryptedMessage;
 }
 
-std::string cryptography::encryption::elliptic_curve::decrypt(const std::string& encryptedData, const EC_KEY* privateKey) {
-    // Implémentez ici la fonction de décryptage en utilisant OpenSSL
+
+std::string cryptography::encryption::elliptic_curve::decrypt(const std::string& encryptedMessage, EC_KEY* privateKey) {
+    
+    //Crée le groupe de la coube elliptique à utiliser
+    EC_GROUP* group = EC_GROUP_new_by_curve_name(NID_secp384r1);
+
+    // Extraire la clé publique éphémère, le texte chiffré et le tag d'authentification
+    size_t ephemeralKeySize = EC_POINT_point2oct(group, publicKey, POINT_CONVERSION_UNCOMPRESSED, NULL, 0, NULL);
+    std::vector<unsigned char> ephemeralKeyBytes(ephemeralKeySize);
+    std::copy(encryptedMessage.begin(), encryptedMessage.begin() + ephemeralKeySize, ephemeralKeyBytes.begin());
+    std::string ciphertext(encryptedMessage.begin() + ephemeralKeySize, encryptedMessage.end() - 16);
+    std::string tag(encryptedMessage.end() - 16, encryptedMessage.end());
+
+    // Recréer la clé publique éphémère
+    EC_POINT* ephemeralPubKey = EC_POINT_new(group);
+    EC_POINT_oct2point(group, ephemeralPubKey, ephemeralKeyBytes.data(), ephemeralKeySize, NULL);
+
+    // Calculer le secret partagé
+    unsigned char secret[48];
+    ECDH_compute_key(secret, sizeof(secret), ephemeralPubKey, privateKey, NULL);
+
+    // Dérivez la clé symétrique et l'IV à partir du secret partagé
+    unsigned char derivedKey[48];
+    size_t keyLen = 32;
+    size_t ivLen = 16;
+    EVP_PKEY_CTX* pctx = EVP_PKEY_CTX_new_id(EVP_PKEY_HKDF, NULL);
+    EVP_PKEY_derive_init(pctx);
+    EVP_PKEY_CTX_set_hkdf_md(pctx, EVP_sha384());
+    EVP_PKEY_CTX_set1_hkdf_salt(pctx, "ECIES", 5); // Utilisez "ECIES" comme sel
+    EVP_PKEY_CTX_set1_hkdf_key(pctx, secret, sizeof(secret));
+    EVP_PKEY_CTX_add1_hkdf_info(pctx, "KeyIV", 5); // Utilisez "KeyIV" comme information HKDF
+    EVP_PKEY_derive(pctx, derivedKey, &keyLen);
+    EVP_PKEY_CTX_free(pctx);
+
+    // Décrypter le texte chiffré
+    std::string decryptedText;
+    decryptedText.resize(ciphertext.size());
+    EVP_CIPHER_CTX* ctx = EVP_CIPHER_CTX_new();
+    EVP_DecryptInit_ex(ctx, EVP_aes_256_gcm(), NULL, derivedKey, derivedKey + 32);
+    EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_SET_TAG, 16, const_cast<char*>(tag.data()));
+    int len;
+    EVP_DecryptUpdate(ctx, reinterpret_cast<unsigned char*>(&decryptedText[0]), &len, reinterpret_cast<const unsigned char*>(ciphertext.data()), ciphertext.size());
+    int finalLen;
+    EVP_DecryptFinal_ex(ctx, reinterpret_cast<unsigned char*>(&decryptedText[0]) + len, &finalLen);
+    decryptedText.resize(len + finalLen);
+
+    // Nettoyer les ressources
+    EC_POINT_free(ephemeralPubKey);
+    EVP_CIPHER_CTX_free(ctx);
+    EC_GROUP_free(group);
+
+    return decryptedText;
 }
+
 
 
 
