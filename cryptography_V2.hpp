@@ -107,6 +107,16 @@
 #include <bitset>
 #endif
 
+#ifndef __include_obj_mac.h__
+#define __include_obj_mac.h__
+#include <openssl/obj_mac.h>
+#endif
+
+#ifndef __include_bn_h__
+#define __include_bn_h__
+#include <openssl/bn.h>
+#endif
+
 
 namespace cryptography {
 
@@ -162,11 +172,15 @@ namespace cryptography {
                 int key_size;
 
             public :
-                
+                void GENERATE_EC_KEYPAIR(EC_KEY*& privateKey, EC_POINT*& publicKey);
+                void generateEnvironnementVariable(const char* VariableName, std::string Valeur);
+                std::string ReadFromFile(const std::string& filename);
+                std::string encrypt(const std::string& plaintext, const std::string& publicKeyFilename);
+                std::string decrypt(const std::string& encryptedData, const std::string& privateKeyPath, std::string& decryptedData);
 
         }
 
     }
 }
 
-#endif
+#endif  

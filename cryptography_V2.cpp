@@ -109,6 +109,16 @@
 #include <bitset>
 #endif
 
+#ifndef __include_obj_mac.h__
+#define __include_obj_mac.h__
+#include <openssl/obj_mac.h>
+#endif
+
+#ifndef __include_bn_h__
+#define __include_bn_h__
+#include <openssl/bn.h>
+#endif
+
 #include "cryptography_V2.hpp"
 
 namespace cryptography {
@@ -189,7 +199,7 @@ namespace cryptography {
                 void cryptography::encryption::AES_DECRYPTION(const std::string& encryptedData, const std::string& key, std::string& decryptedData);
                 
         }
-    }
+    
 
         class RSA {
 
@@ -207,6 +217,20 @@ namespace cryptography {
                 std::string decrypt(const std::string& encryptedData, const std::string& privateKeyPath, std::string& decryptedData)
         }
 
+
+        class elliptic_curve {
+
+            private :
+                int key_size;
+
+            public :
+                void GENERATE_EC_KEYPAIR(EC_KEY*& privateKey, EC_POINT*& publicKey);
+                void generateEnvironnementVariable(const char* VariableName, std::string Valeur);
+                std::string ReadFromFile(const std::string& filename);
+                std::string encrypt(const std::string& plaintext, const std::string& publicKeyFilename);
+                std::string decrypt(const std::string& encryptedData, const std::string& privateKeyPath, std::string& decryptedData);
+        }
+    }
 }
 
 //hash functions 
@@ -575,6 +599,78 @@ std::string cryptography::encryption::RSA::decrypt(const std::string& encryptedD
 
 
 // elliptic_curve fuctions 
+
+void cryptography::encryption::elliptic_curve::GENERATE_EC_KEYPAIR(EC_KEY*& privateKey, EC_POINT*& publicKey){
+    // Création de la structure de la courbe elliptique à utiliser
+    EC_GROUP* group = EC_GROUP_new_by_curve_name(NID_secp384r1);
+
+    // Génération d'une nouvelle clé privée liée à la courbe
+    privateKey = EC_KEY_new();
+    EC_KEY_set_group(privateKey, group);
+    EC_KEY_generate_key(privateKey);
+
+    // Récupération de la clé publique correspondante
+    publicKey = EC_KEY_get0_public_key(privateKey);
+    BIGNUM* x = BN_new();
+    BIGNUM* y = BN_new();
+    EC_POINT_get_affine_coordinates_GFp(group, publicKey, x, y, NULL);
+    BN_free(y);
+
+    // Conversion du point de la clé publique en une représentation binaire
+    int buf_len = EC_POINT_point2buf(group, publicKey, POINT_CONVERSION_UNCOMPRESSED, NULL, 0, NULL);
+    std::string pubKeyBinary(buf_len, 0);
+    EC_POINT_point2buf(group, publicKey, POINT_CONVERSION_UNCOMPRESSED, (unsigned char*)&pubKeyBinary[0], buf_len, NULL);
+
+    // Nettoyage des variables temporaires
+    BN_free(x);
+    EC_GROUP_free(group);
+}
+
+void cryptography::encryption::elliptic_curve::generateEnvironnementVariable(const char* VariableName, std::string Valeur){
+    std::string path = std::string(getenv("HOME")) + "/.myapp/";
+    struct stat st = {0};
+    if (stat(path.c_str(), &st) == -1) {
+        mkdir(path.c_str(), 0700); // Créer le dossier avec les permissions restreintes
+    }
+    std::ofstream file;
+    path += VariableName;
+    file.open(path, std::ios::out | std::ios::binary);
+    if (file.is_open()) {
+        file.write(Valeur.c_str(), Valeur.size());
+        file.close();
+        chmod(path.c_str(), S_IRUSR | S_IWUSR); // Restreindre les permissions d'accès au fichier
+    } 
+    else {
+        std::cerr << "Erreur lors de l'ouverture du fichier in generate function " << VariableName << std::endl;
+        exit(1);
+    }   
+
+}
+
+std::string cryptography::encryption::elliptic_curve::ReadFromFile(const std::string& filename) {
+    std::ifstream file;
+    std::string path = std::string(getenv("HOME")) + "/.myapp/" + filename;
+    file.open(path, std::ios::in | std::ios::binary);
+        
+    if (file.is_open()) {
+        std::stringstream ss;
+        ss << file.rdbuf();
+        std::string value = ss.str();
+        file.close();
+        return value;
+    } else {
+        std::cerr << "Erreur lors de l'ouverture du fichier " << filename << std::endl;
+        exit(1);
+    }
+}
+
+std::string cryptography::encryption::elliptic_curve::encrypt(const std::string& plaintext, const EC_POINT* publicKey) {
+    // Implémentez ici la fonction de cryptage en utilisant OpenSSL
+}
+
+std::string cryptography::encryption::elliptic_curve::decrypt(const std::string& encryptedData, const EC_KEY* privateKey) {
+    // Implémentez ici la fonction de décryptage en utilisant OpenSSL
+}
 
 
 
