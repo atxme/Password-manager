@@ -1,1 +1,5 @@
-g++ -o passwordManager main.cpp environnement.cpp cryptography.cpp `pkg-config --cflags --libs gtk+-3.0` -lssl -lcrypto
+g++ -o passwordManager main.cpp -Wno-deprecated-declarations environnement.cpp cryptography.cpp `pkg-config --cflags --libs gtk+-3.0` -lssl -lcrypto
+
+
+pour test crypto :
+g++ -o testcrypto -Wno-deprecated-declarations test_cryptography.cpp cryptography_V2.cpp `pkg-config --cflags --libs gtk+-3.0` -lssl -lcrypto

@@ -64,7 +64,7 @@
 
 #ifndef __include_pem_h__
 #define __include_pem_h__
-#include <pem.h>
+#include <openssl/pem.h>
 #endif
 
 #ifndef __include_fstream__
@@ -117,6 +117,9 @@
 #include <openssl/bn.h>
 #endif
 
+#include <openssl/core_names.h>
+#include <openssl/params.h>
+#include <openssl/kdf.h>
 
 namespace cryptography {
 
@@ -124,62 +127,51 @@ namespace cryptography {
     std::string to_binary(const T& data);
     std::string binaryToBase64(const std::string& binary_str);
 
-    class hashfunctions {
-        private :
-            std::string data;
+    class HashFunctions {
+        public:
+            static std::string hash_SHA256(std::string data);
+            static std::string hash_SHA512(std::string data);
+    };
 
-        public :
+    namespace encryption {
 
-            std::string hash_SHA256 (std::string data);
-            std::string hash_SHA512 (std::string data);
-       
+        class AES {
+            private:
+                int key_size;
+
+            public:
+                static void generateEnvironnementVariable(const char* VariableName, std::string Valeur);
+                static void GENERATE_AES_KEY(std::string& key);
+                static void GENERATE_AES_IV(std::string& iv);
+                static std::string ReadFromFile(const std::string& filename);
+                static std::string PKCS5Padding(const std::string& str);
+                static std::string PKCS5Depadding(const std::string& str);
+                static void AES_ENCRYPTION(const std::string& data, const std::string& key , const std::string& iv, std::string& encryptedData);
+                static void AES_DECRYPTION(const std::string& encryptedData, const std::string& key, std::string& decryptedData);
+        };
+
+        class RSAEncryption {
+            public:
+                static void generateEnvironnementVariable(const char* VariableName, std::string Valeur);
+                static std::string ReadFromFile(const std::string& filename, std::string& data);
+                static void generateRSAKeyPair(int key_length, std::string& public_key, std::string& private_key);
+                static std::string PKCS1Padding(const std::string& str, int block_size);
+                static std::string PKCS1Depadding(const std::string& str, RSA* private_key);
+                static std::string encrypt(const std::string& data, RSA* public_key);
+                static std::string decrypt(const std::string& encryptedData, RSA* private_key);
+        };
+
+        class EllipticCurve {
+            public:
+                static void GENERATE_EC_KEYPAIR(EC_KEY*& privateKey, EC_POINT*& publicKey);
+                static void generateEnvironnementVariable(const char* VariableName, std::string Valeur);
+                static std::string ReadFromFile(const std::string& filename);
+                static std::string encrypt(const std::string& plaintext, const EC_POINT* publicKey);
+                static std::string decrypt(const std::string& encryptedMessage, EC_KEY* privateKey);
+        };
+
     }
 
-    class encryption {
-
-        class AES{
-            private :
-                int key_size;
-
-            public :
-                void generateEnvironnementVariable(const char* VariableName, std::string Valeur);
-                void GENERATE_AES_KEY(std::string& key);  
-                void GENERATE_AES_IV(std::string& iv);
-                std::string ReadFromFile(const std::string& filename);
-                std::string PKCS5Padding(const std::string& str);
-                std::string PKCS5Depadding(const std::string& str);
-                cryptography::encryption::AES_ENCRYPTION (const std::string& data, const std::string& key , const std::string& iv, std::string& encryptedData);
-                void cryptography::encryption::AES_DECRYPTION(const std::string& encryptedData, const std::string& key, std::string& decryptedData);
-                
-        }
-
-        class RSA{
-            private :
-                int key_size;
-
-            public :
-                void generateEnvironnementVariable(const char* VariableName, std::string Valeur);
-                void ReadFromFile(const std::string& filename, std::string& data);
-                void generateRSAKeyPair(RSA*& privateKey, RSA*& publicKey);
-                std::string PKCS1Padding(const std::string& str, int block_size);
-                std::string PKCS1Depadding(const std::string& str);
-                std::string encrypt(const std::string& plaintext, const std::string& publicKeyFilename);
-                std::string decrypt(const std::string& encryptedData, const std::string& privateKeyPath, std::string& decryptedData);
-        }
-
-        class elliptic_curve{
-            private :
-                int key_size;
-
-            public :
-                void GENERATE_EC_KEYPAIR(EC_KEY*& privateKey, EC_POINT*& publicKey);
-                void generateEnvironnementVariable(const char* VariableName, std::string Valeur);
-                std::string ReadFromFile(const std::string& filename);
-                std::string encrypt(const std::string& plaintext, const EC_POINT* publicKey);
-                std::string decrypt(const std::string& encryptedMessage, EC_KEY* privateKey);
-        }
-
-    }
 }
 
-#endif  
+

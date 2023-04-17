@@ -57,11 +57,11 @@
 #ifndef __include_ec_h__
 #define __include_ec_h__
 #include <openssl/ec.h>
-#endif
+#endif  
 
 #ifndef __include_pem_h__
 #define __include_pem_h__
-#include <pem.h>
+#include <openssl/pem.h>
 #endif
 
 #ifndef __include_fstream__
@@ -119,6 +119,12 @@
 #include <openssl/bn.h>
 #endif
 
+#include<openssl/bio.h>
+#include <openssl/core_names.h>
+#include <openssl/params.h>
+#include <openssl/kdf.h>
+
+
 #include "cryptography_V2.hpp"
 
 namespace cryptography {
@@ -138,104 +144,35 @@ namespace cryptography {
     }
 
     std::string binaryToBase64(const std::string& binary_str) {
-    // Créer un flux de lecture à partir de la chaîne binaire
-    BIO* bio_binary = BIO_new_mem_buf(binary_str.c_str(), -1);
+        BIO* bio_binary = BIO_new_mem_buf(binary_str.c_str(), -1);
+        BIO* bio_base64 = BIO_new(BIO_f_base64());
+        BIO_set_flags(bio_base64, BIO_FLAGS_BASE64_NO_NL);
+        BIO* bio_encode = BIO_new(BIO_s_bio());
+        BIO_push(bio_encode, bio_base64);
 
-    // Créer un flux d'écriture pour la chaîne Base64
-    BIO* bio_base64 = BIO_new(BIO_f_base64());
-    BIO_set_flags(bio_base64, BIO_FLAGS_BASE64_NO_NL);
-
-    // Créer un flux de transformation pour le codage Base64
-    BIO* bio_encode = BIO_new(BIO_f_bio());
-    BIO_push(bio_encode, bio_base64);
-
-    // Écrire la chaîne binaire encodée en Base64 dans le flux de transformation
-    char buf[4096];
-    int len;
-    while ((len = BIO_read(bio_binary, buf, sizeof(buf))) > 0) {
-        BIO_write(bio_encode, buf, len);
-    }
-
-    // Finaliser la transformation
-    BIO_flush(bio_encode);
-
-    // Lire la chaîne Base64 résultante
-    BUF_MEM* buf_mem;
-    BIO_get_mem_ptr(bio_base64, &buf_mem);
-    std::string base64_str(buf_mem->data, buf_mem->length);
-
-    // Nettoyer les flux
-    BIO_free_all(bio_binary);
-    BIO_free_all(bio_encode);
-
-    return base64_str;
-}
-
-    class hashfunctions {
-        private :
-            std::string hash;
-
-        public :
-
-            std::string hash_SHA256 (std::string data);
-            std::string hash_SHA512 (std::string data);
-            
-    }
-
-    class encryption {
-
-        class AES{
-            private :
-                int key_size;
-
-            public :
-                void generateEnvironnementVariable(const char* VariableName, std::string Valeur);
-                void GENERATE_AES_KEY(std::string& key);  
-                void GENERATE_AES_IV(std::string& iv);
-                std::string ReadFromFile(const std::string& filename);
-                std::string PKCS5Padding(const std::string& str);
-                std::string PKCS5Depadding(const std::string& str);
-                cryptography::encryption::AES_ENCRYPTION (const std::string& data, const std::string& key , const std::string& iv, std::string& encryptedData);
-                void cryptography::encryption::AES_DECRYPTION(const std::string& encryptedData, const std::string& key, std::string& decryptedData);
-                
-        }
-    
-
-        class RSA {
-
-            private :
-
-                int key_size;
-
-            public :
-                void generateEnvironnementVariable(const char* VariableName, std::string Valeur);
-                void ReadFromFile(const std::string& filename, std::string& data);
-                void generateRSAKeyPair(std::string& key);
-                std::string PKCS1Padding(const std::string& str, int block_size);
-                std::string PKCS1Depadding(const std::string& str);
-                std::string encrypt(const std::string& plaintext, const std::string& publicKeyFilename);
-                std::string decrypt(const std::string& encryptedData, const std::string& privateKeyPath, std::string& decryptedData)
+        char buf[4096];
+        int len;
+        while ((len = BIO_read(bio_binary, buf, sizeof(buf))) > 0) {
+            BIO_write(bio_encode, buf, len);
         }
 
+        BIO_flush(bio_encode);
 
-        class elliptic_curve {
+        BUF_MEM* buf_mem;
+        BIO_get_mem_ptr(bio_base64, &buf_mem);
+        std::string base64_str(buf_mem->data, buf_mem->length);
 
-            private :
-                int key_size;
+        BIO_free_all(bio_binary);
+        BIO_free_all(bio_encode);
 
-            public :
-                void GENERATE_EC_KEYPAIR(EC_KEY*& privateKey, EC_POINT*& publicKey);
-                void generateEnvironnementVariable(const char* VariableName, std::string Valeur);
-                std::string ReadFromFile(const std::string& filename);
-                std::string encrypt(const std::string& plaintext, const EC_POINT* publicKey);
-                std::string decrypt(const std::string& encryptedMessage, EC_KEY* privateKey);
-        }
+        return base64_str;
     }
+
 }
 
 //hash functions 
 
-std::string cryptography::hashfunctions::hash_SHA256(std::string data) {
+std::string cryptography::HashFunctions::hash_SHA256(std::string data) {
     unsigned char digest[SHA256_DIGEST_LENGTH];
     SHA256(reinterpret_cast<const unsigned char*>(data.c_str()), data.length(), digest);
     std::string result;
@@ -247,7 +184,7 @@ std::string cryptography::hashfunctions::hash_SHA256(std::string data) {
     return result;
 }
 
-std::string cryptography::hashfunctions::hash_SHA512(std::string data) {
+std::string cryptography::HashFunctions::hash_SHA512(std::string data) {
     unsigned char digest[SHA512_DIGEST_LENGTH];
     SHA512(reinterpret_cast<const unsigned char*>(data.c_str()), data.length(), digest);
     std::string result;
@@ -258,6 +195,7 @@ std::string cryptography::hashfunctions::hash_SHA512(std::string data) {
     }
     return result;
 }
+
 
 //AES ENCRYPTION AND DECRYPTION functions 
 
@@ -406,7 +344,7 @@ void cryptography::encryption::AES::AES_DECRYPTION(const std::string& encryptedD
 
     // Initialiser les variables OpenSSL
     OpenSSL_add_all_algorithms();
-    ERR_load_crypto_strings();
+    ERR_load_CRYPTO_strings();
 
     // Créer un contexte de chiffrement AES CBC
     EVP_CIPHER_CTX* ctx = EVP_CIPHER_CTX_new();
@@ -430,7 +368,7 @@ void cryptography::encryption::AES::AES_DECRYPTION(const std::string& encryptedD
 
 // RSA Functions 
 
-void cryptography::encryption::RSA::generateEnvironnementVariable(const char* VariableName, std::string Valeur){
+void cryptography::encryption::RSAEncryption::generateEnvironnementVariable(const char* VariableName, std::string Valeur){
     std::string path = std::string(getenv("HOME")) + "/.myapp/";
     struct stat st = {0};
     if (stat(path.c_str(), &st) == -1) {
@@ -451,7 +389,7 @@ void cryptography::encryption::RSA::generateEnvironnementVariable(const char* Va
 
 }
 
-std::string cryptography::encryption::RSA::ReadFromFile(const std::string& filename) {
+std::string cryptography::encryption::RSAEncryption::ReadFromFile(const std::string& filename, std::string& data) {
     std::ifstream file;
     std::string path = std::string(getenv("HOME")) + "/.myapp/" + filename;
     file.open(path, std::ios::in | std::ios::binary);
@@ -468,7 +406,7 @@ std::string cryptography::encryption::RSA::ReadFromFile(const std::string& filen
     }
 }
 
-void cryptography::encryption::RSA::generateRSAKeyPair(int key_length, std::string& public_key, std::string& private_key) {
+void cryptography::encryption::RSAEncryption::generateRSAKeyPair(int key_length, std::string& public_key, std::string& private_key) {
     // Initialiser le générateur de nombres aléatoires
     srand(time(NULL));
 
@@ -480,9 +418,12 @@ void cryptography::encryption::RSA::generateRSAKeyPair(int key_length, std::stri
     EVP_PKEY_keygen(ctx, &pkey);
     EVP_PKEY_CTX_free(ctx);
 
+    // Récupérer le pointeur RSA
+    RSA* rsa = EVP_PKEY_get1_RSA(pkey);
+
     // Convertir la clé publique en binaire
     BIO* bio_public = BIO_new(BIO_s_mem());
-    PEM_write_bio_RSA_PUBKEY(bio_public, pkey->pkey.rsa);
+    PEM_write_bio_RSA_PUBKEY(bio_public, rsa);
     BUF_MEM* public_buf = NULL;
     BIO_get_mem_ptr(bio_public, &public_buf);
     public_key = std::string(public_buf->data, public_buf->length);
@@ -490,18 +431,19 @@ void cryptography::encryption::RSA::generateRSAKeyPair(int key_length, std::stri
 
     // Convertir la clé privée en binaire
     BIO* bio_private = BIO_new(BIO_s_mem());
-    PEM_write_bio_RSAPrivateKey(bio_private, pkey->pkey.rsa, NULL, NULL, 0, NULL, NULL);
+    PEM_write_bio_RSAPrivateKey(bio_private, rsa, NULL, NULL, 0, NULL, NULL);
     BUF_MEM* private_buf = NULL;
     BIO_get_mem_ptr(bio_private, &private_buf);
     private_key = std::string(private_buf->data, private_buf->length);
     BIO_free_all(bio_private);
 
     // Libérer la mémoire
+    RSA_free(rsa);
     EVP_PKEY_free(pkey);
-    ERR_free_strings();
 }
 
-std::string cryptography::encryption::RSA::PKCS1Padding(const std::string& str, int block_size) {
+
+std::string cryptography::encryption::RSAEncryption::PKCS1Padding(const std::string& str, int block_size) {
     std::string padded_str(block_size, 0x00);
     int padding_length = block_size - str.length() - 3;
     padded_str[0] = 0x00;
@@ -514,16 +456,16 @@ std::string cryptography::encryption::RSA::PKCS1Padding(const std::string& str, 
     return padded_str;
 }
 
-std::string cryptography::encryption::RSA::PKCS1Depadding(const std::string& str) {
+std::string cryptography::encryption::RSAEncryption::PKCS1Depadding(const std::string& str, RSA* private_key) {
 
     // Retirer le padding PKCS1
-    const int padding_len = RSA_size(cryptography::keys::private_key.get()) - str.length();
+    const int padding_len = RSA_size(private_key) - str.length();
     if (padding_len > 0) {
         throw std::runtime_error("Données de taille incorrecte pour le dépadding RSA PKCS#1 v1.5");
     }
     const unsigned char* str_ptr = reinterpret_cast<const unsigned char*>(str.data());
-    std::string depadded_str(RSA_size(cryptography::keys::private_key.get()) - 11, '\0');
-    const int depadded_len = RSA_private_decrypt(str.length(), str_ptr, reinterpret_cast<unsigned char*>(depadded_str.data()), cryptography::keys::private_key.get(), RSA_PKCS1_PADDING);
+    std::string depadded_str(RSA_size(private_key) - 11, '\0');
+    const int depadded_len = RSA_private_decrypt(str.length(), str_ptr, reinterpret_cast<unsigned char*>(depadded_str.data()), private_key, RSA_PKCS1_PADDING);
     if (depadded_len == -1) {
         throw std::runtime_error("Erreur lors du déchiffrement RSA avec padding PKCS#1 v1.5");
     }
@@ -531,76 +473,53 @@ std::string cryptography::encryption::RSA::PKCS1Depadding(const std::string& str
     return depadded_str;
 }
 
-std::string cryptography::encryption::RSA::encrypt(const std::string& data, const std::string& public_key_file, std::string& encrypted_data) {
-    // Lire la clé publique RSA à partir du fichier
-    RSA* public_key = nullptr;
-    FILE* public_key_fp = fopen(public_key_file.c_str(), "rb");
-    if (public_key_fp == nullptr) {
-        throw std::runtime_error("Could not open public key file: " + public_key_file);
-    }
-    public_key = PEM_read_RSA_PUBKEY(public_key_fp, &public_key, nullptr, nullptr);
-    fclose(public_key_fp);
-    if (public_key == nullptr) {
-        throw std::runtime_error("Could not read public key from file: " + public_key_file);
-    }
-
-    // Chiffrer les données avec la clé publique RSA
+std::string cryptography::encryption::RSAEncryption::encrypt(const std::string& data, RSA* public_key) {
+    // Encrypt the data with the RSA public key
     const int rsa_size = RSA_size(public_key);
     std::vector<uint8_t> rsa_input(rsa_size - 11);
     std::vector<uint8_t> rsa_output(rsa_size);
     std::string padded_data = PKCS1Padding(data, rsa_size - 11);
+    std::string encrypted_data;
     for (size_t i = 0; i < padded_data.size(); i += rsa_size - 11) {
         const int len = std::min<int>(rsa_size - 11, padded_data.size() - i);
         memcpy(rsa_input.data(), padded_data.data() + i, len);
         const int rsa_result = RSA_public_encrypt(len, rsa_input.data(), rsa_output.data(), public_key, RSA_PKCS1_PADDING);
         if (rsa_result == -1) {
-            RSA_free(public_key);
             throw std::runtime_error("RSA encryption failed");
         }
         encrypted_data += std::string(rsa_output.begin(), rsa_output.begin() + rsa_result);
     }
 
-    // Libérer la mémoire et nettoyer
-    RSA_free(public_key);
+    return encrypted_data;
 }
 
-std::string cryptography::encryption::RSA::decrypt(const std::string& encryptedData, const std::string& privateKeyPath, std::string& decryptedData) {
-    // Chargement de la clé privée RSA
-    RSA* private_key = NULL;
-    FILE* private_key_file = fopen(privateKeyPath.c_str(), "rb");
-    if (!private_key_file) {
-        throw std::runtime_error("Failed to open private key file for reading");
-    }
-    private_key = PEM_read_RSAPrivateKey(private_key_file, NULL, NULL, NULL);
-    fclose(private_key_file);
-    if (!private_key) {
-        throw std::runtime_error("Failed to load private key");
-    }
+std::string cryptography::encryption::RSAEncryption::decrypt(const std::string& encryptedData, RSA* private_key) {
+    // Decode the Base64 string to binary
+    std::string binary_encrypted_data = cryptography::binaryToBase64(encryptedData);
 
-    // Décodage de la chaîne Base64 en binaire
-    std::string binary_encrypted_data = base64ToBinary(encryptedData);
-
-    // Décryptage des données
+    // Decrypt the data
     int encrypted_data_size = static_cast<int>(binary_encrypted_data.length());
     int rsa_key_size = RSA_size(private_key);
     std::unique_ptr<unsigned char[]> decrypted_data(new unsigned char[rsa_key_size]);
     int decrypted_data_size = RSA_private_decrypt(encrypted_data_size, reinterpret_cast<const unsigned char*>(binary_encrypted_data.c_str()), decrypted_data.get(), private_key, RSA_PKCS1_PADDING);
     if (decrypted_data_size == -1) {
-        RSA_free(private_key);
         throw std::runtime_error("RSA decryption failed");
     }
 
-    // Conversion du binaire en chaîne de caractères
-    decryptedData = std::string(reinterpret_cast<const char*>(decrypted_data.get()), decrypted_data_size);
+    // Convert the binary data to a string
+    std::string decryptedData = std::string(reinterpret_cast<const char*>(decrypted_data.get()), decrypted_data_size);
 
-    // Nettoyage de la mémoire
-    RSA_free(private_key);
+    return decryptedData;
 }
+
+
+
+
 
 
 // elliptic_curve fuctions 
 
-void cryptography::encryption::elliptic_curve::GENERATE_EC_KEYPAIR(EC_KEY*& privateKey, EC_POINT*& publicKey){
+void cryptography::encryption::EllipticCurve::GENERATE_EC_KEYPAIR(EC_KEY*& privateKey, EC_POINT*& publicKey) {
     // Création de la structure de la courbe elliptique à utiliser
     EC_GROUP* group = EC_GROUP_new_by_curve_name(NID_secp384r1);
 
@@ -610,23 +529,26 @@ void cryptography::encryption::elliptic_curve::GENERATE_EC_KEYPAIR(EC_KEY*& priv
     EC_KEY_generate_key(privateKey);
 
     // Récupération de la clé publique correspondante
-    publicKey = EC_KEY_get0_public_key(privateKey);
+    const EC_POINT* const_pub_key = EC_KEY_get0_public_key(privateKey);
+    publicKey = EC_POINT_dup(const_pub_key, group);
+    
     BIGNUM* x = BN_new();
     BIGNUM* y = BN_new();
     EC_POINT_get_affine_coordinates_GFp(group, publicKey, x, y, NULL);
     BN_free(y);
 
     // Conversion du point de la clé publique en une représentation binaire
-    int buf_len = EC_POINT_point2buf(group, publicKey, POINT_CONVERSION_UNCOMPRESSED, NULL, 0, NULL);
+    size_t buf_len = EC_POINT_point2oct(group, publicKey, POINT_CONVERSION_UNCOMPRESSED, NULL, 0, NULL);
     std::string pubKeyBinary(buf_len, 0);
-    EC_POINT_point2buf(group, publicKey, POINT_CONVERSION_UNCOMPRESSED, (unsigned char*)&pubKeyBinary[0], buf_len, NULL);
+    unsigned char* pubKeyBinaryPtr = reinterpret_cast<unsigned char*>(&pubKeyBinary[0]);
+    EC_POINT_point2oct(group, publicKey, POINT_CONVERSION_UNCOMPRESSED, pubKeyBinaryPtr, buf_len, NULL);
 
     // Nettoyage des variables temporaires
     BN_free(x);
     EC_GROUP_free(group);
 }
 
-void cryptography::encryption::elliptic_curve::generateEnvironnementVariable(const char* VariableName, std::string Valeur){
+void cryptography::encryption::EllipticCurve::generateEnvironnementVariable(const char* VariableName, std::string Valeur){
     std::string path = std::string(getenv("HOME")) + "/.myapp/";
     struct stat st = {0};
     if (stat(path.c_str(), &st) == -1) {
@@ -647,7 +569,7 @@ void cryptography::encryption::elliptic_curve::generateEnvironnementVariable(con
 
 }
 
-std::string cryptography::encryption::elliptic_curve::ReadFromFile(const std::string& filename) {
+std::string cryptography::encryption::EllipticCurve::ReadFromFile(const std::string& filename) {
     std::ifstream file;
     std::string path = std::string(getenv("HOME")) + "/.myapp/" + filename;
     file.open(path, std::ios::in | std::ios::binary);
@@ -664,11 +586,10 @@ std::string cryptography::encryption::elliptic_curve::ReadFromFile(const std::st
     }
 }
 
-std::string cryptography::encryption::elliptic_curve::encrypt(const std::string& plaintext, const EC_POINT* publicKey){
+std::string cryptography::encryption::EllipticCurve::encrypt(const std::string& plaintext, const EC_POINT* publicKey){
     //Crée le groupe de la coube elliptique à utiliser
     EC_GROUP* group = EC_GROUP_new_by_curve_name(NID_secp384r1);
-    
-    
+
     // Générer une paire de clés éphémères
     EC_KEY* ephemeralKey = EC_KEY_new_by_curve_name(NID_secp384r1);
     EC_KEY_generate_key(ephemeralKey);
@@ -678,21 +599,22 @@ std::string cryptography::encryption::elliptic_curve::encrypt(const std::string&
     unsigned char secret[48];
     ECDH_compute_key(secret, sizeof(secret), publicKey, ephemeralKey, NULL);
 
-    // Dérivation de la clé symétrique et de l'IV à partir du secret partagé en utilisant HKDF
+    // Derive the symmetric key and IV from the shared secret using HKDF
     unsigned char derivedKey[48];
     size_t keyLen = sizeof(derivedKey);
-    EVP_PKEY_CTX* pctx = EVP_PKEY_CTX_new_id(EVP_PKEY_HKDF, NULL);
+    EVP_PKEY_CTX *pctx;
+    pctx = EVP_PKEY_CTX_new_id(EVP_PKEY_HKDF, NULL);
     EVP_PKEY_derive_init(pctx);
     EVP_PKEY_CTX_set_hkdf_md(pctx, EVP_sha384());
-    EVP_PKEY_CTX_set1_hkdf_salt(pctx, "ECIES", 5); // Utiliser "ECIES" comme sel
+    EVP_PKEY_CTX_set1_hkdf_salt(pctx, reinterpret_cast<const unsigned char*>("ECIES"), 5);
     EVP_PKEY_CTX_set1_hkdf_key(pctx, secret, sizeof(secret));
-    EVP_PKEY_CTX_add1_hkdf_info(pctx, "KeyIV", 5); // Utiliser "KeyIV" comme info HKDF
+    EVP_PKEY_CTX_add1_hkdf_info(pctx, reinterpret_cast<const unsigned char*>("KeyIV"), 5);
     EVP_PKEY_derive(pctx, derivedKey, &keyLen);
     EVP_PKEY_CTX_free(pctx);
 
     // Chiffrer le texte en clair avec AES-256-GCM
     EVP_CIPHER_CTX* cipherCtx = EVP_CIPHER_CTX_new();
-    EVP_EncryptInit(cipherCtx, EVP_aes_256_gcm(), derivedKey, derivedKey + 32);
+    EVP_EncryptInit_ex(cipherCtx, EVP_aes_256_gcm(), NULL, derivedKey, derivedKey + 32);
     unsigned char ciphertext[plaintext.size()];
     int outlen;
     EVP_EncryptUpdate(cipherCtx, ciphertext, &outlen, reinterpret_cast<const unsigned char*>(plaintext.data()), plaintext.size());
@@ -716,18 +638,16 @@ std::string cryptography::encryption::elliptic_curve::encrypt(const std::string&
     // Nettoyer les ressources
     EC_KEY_free(ephemeralKey);
     EC_GROUP_free(group);
-
     return encryptedMessage;
 }
 
-
-std::string cryptography::encryption::elliptic_curve::decrypt(const std::string& encryptedMessage, EC_KEY* privateKey) {
+std::string cryptography::encryption::EllipticCurve::decrypt(const std::string& encryptedMessage, EC_KEY* privateKey) {
     
     //Crée le groupe de la coube elliptique à utiliser
     EC_GROUP* group = EC_GROUP_new_by_curve_name(NID_secp384r1);
 
     // Extraire la clé publique éphémère, le texte chiffré et le tag d'authentification
-    size_t ephemeralKeySize = EC_POINT_point2oct(group, publicKey, POINT_CONVERSION_UNCOMPRESSED, NULL, 0, NULL);
+    size_t ephemeralKeySize = EC_POINT_point2oct(group, EC_KEY_get0_public_key(privateKey), POINT_CONVERSION_UNCOMPRESSED, NULL, 0, NULL);
     std::vector<unsigned char> ephemeralKeyBytes(ephemeralKeySize);
     std::copy(encryptedMessage.begin(), encryptedMessage.begin() + ephemeralKeySize, ephemeralKeyBytes.begin());
     std::string ciphertext(encryptedMessage.begin() + ephemeralKeySize, encryptedMessage.end() - 16);
@@ -741,16 +661,16 @@ std::string cryptography::encryption::elliptic_curve::decrypt(const std::string&
     unsigned char secret[48];
     ECDH_compute_key(secret, sizeof(secret), ephemeralPubKey, privateKey, NULL);
 
-    // Dérivez la clé symétrique et l'IV à partir du secret partagé
+    // Derive the symmetric key and IV from the shared secret using HKDF
     unsigned char derivedKey[48];
-    size_t keyLen = 32;
-    size_t ivLen = 16;
-    EVP_PKEY_CTX* pctx = EVP_PKEY_CTX_new_id(EVP_PKEY_HKDF, NULL);
+    size_t keyLen = sizeof(derivedKey);
+    EVP_PKEY_CTX *pctx;
+    pctx = EVP_PKEY_CTX_new_id(EVP_PKEY_HKDF, NULL);
     EVP_PKEY_derive_init(pctx);
     EVP_PKEY_CTX_set_hkdf_md(pctx, EVP_sha384());
-    EVP_PKEY_CTX_set1_hkdf_salt(pctx, "ECIES", 5); // Utilisez "ECIES" comme sel
+    EVP_PKEY_CTX_set1_hkdf_salt(pctx, reinterpret_cast<const unsigned char*>("ECIES"), 5);
     EVP_PKEY_CTX_set1_hkdf_key(pctx, secret, sizeof(secret));
-    EVP_PKEY_CTX_add1_hkdf_info(pctx, "KeyIV", 5); // Utilisez "KeyIV" comme information HKDF
+    EVP_PKEY_CTX_add1_hkdf_info(pctx, reinterpret_cast<const unsigned char*>("KeyIV"), 5);
     EVP_PKEY_derive(pctx, derivedKey, &keyLen);
     EVP_PKEY_CTX_free(pctx);
 
