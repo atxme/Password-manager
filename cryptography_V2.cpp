@@ -144,29 +144,29 @@ namespace cryptography {
     }
 
     std::string binaryToBase64(const std::string& binary_str) {
-        BIO* bio_binary = BIO_new_mem_buf(binary_str.c_str(), -1);
+        // Créer un objet BIO en mémoire pour stocker le résultat en base64
         BIO* bio_base64 = BIO_new(BIO_f_base64());
         BIO_set_flags(bio_base64, BIO_FLAGS_BASE64_NO_NL);
-        BIO* bio_encode = BIO_new(BIO_s_bio());
-        BIO_push(bio_encode, bio_base64);
 
-        char buf[4096];
-        int len;
-        while ((len = BIO_read(bio_binary, buf, sizeof(buf))) > 0) {
-            BIO_write(bio_encode, buf, len);
-        }
+        BIO* bio_mem = BIO_new(BIO_s_mem());
+        bio_base64 = BIO_push(bio_base64, bio_mem);
 
-        BIO_flush(bio_encode);
+        // Écrire la chaîne binaire dans l'objet BIO en base64
+        BIO_write(bio_base64, binary_str.data(), binary_str.size());
+        BIO_flush(bio_base64);
 
+        // Récupérer le résultat en base64
         BUF_MEM* buf_mem;
         BIO_get_mem_ptr(bio_base64, &buf_mem);
+
         std::string base64_str(buf_mem->data, buf_mem->length);
 
-        BIO_free_all(bio_binary);
-        BIO_free_all(bio_encode);
+        // Libérer les ressources allouées
+        BIO_free_all(bio_base64);
 
         return base64_str;
     }
+
 
 }
 
@@ -511,9 +511,6 @@ std::string cryptography::encryption::RSAEncryption::decrypt(const std::string& 
 
     return decryptedData;
 }
-
-
-
 
 
 

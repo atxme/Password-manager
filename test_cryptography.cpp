@@ -1,9 +1,10 @@
 #include "cryptography_V2.hpp"
+#include <iostream>
+#include <string>
 
 using namespace cryptography;
 
-
-int main() {
+void cryptageelliptique() {
     // Générer une paire de clés elliptiques
     EC_KEY* privateKey;
     EC_POINT* publicKey;
@@ -12,6 +13,8 @@ int main() {
 
     // Le texte clair à chiffrer
     std::string plaintext = "Ceci est un message secret.";
+    std::string plaintextBase64 = cryptography::binaryToBase64(plaintext);
+    std::cout<< "Message clair en base 64: " << plaintextBase64 << std::endl;
 
     // Chiffrer le message avec la clé publique
     std::string encryptedMessage = ec.encrypt(plaintext, publicKey);
@@ -31,4 +34,10 @@ int main() {
     EC_KEY_free(privateKey);
 
     return 0;
+}
+
+
+void cryptageAes(){
+
+
 }
