@@ -143,6 +143,23 @@ namespace cryptography {
         return binary_str;
     }
 
+    std::string base64ToBinary(const std::string &base64_str) {
+        BIO *b64 = BIO_new(BIO_f_base64());
+        BIO_set_flags(b64, BIO_FLAGS_BASE64_NO_NL);
+        BIO *bio = BIO_new_mem_buf(base64_str.data(), -1);
+        bio = BIO_push(b64, bio);
+
+        std::vector<uint8_t> binary;
+        ssize_t decoded_size;
+        uint8_t buffer[512];
+        while ((decoded_size = BIO_read(bio, buffer, sizeof(buffer))) > 0) {
+            binary.insert(binary.end(), buffer, buffer + decoded_size);
+        }
+
+        BIO_free_all(bio);
+        return std::string(binary.begin(), binary.end());
+    }
+
     std::string binaryToBase64(const std::string& binary_str) {
         // Créer un objet BIO en mémoire pour stocker le résultat en base64
         BIO* bio_base64 = BIO_new(BIO_f_base64());
@@ -475,13 +492,16 @@ std::string cryptography::encryption::RSAEncryption::PKCS1Depadding(const std::s
 
 std::string cryptography::encryption::RSAEncryption::encrypt(const std::string& data, RSA* public_key) {
     // Encrypt the data with the RSA public key
+
+    std::cout << "public key : "<< public_key << std::endl;
     const int rsa_size = RSA_size(public_key);
-    std::vector<uint8_t> rsa_input(rsa_size - 11);
+    const int max_input_size = rsa_size - 11;
+    std::vector<uint8_t> rsa_input(max_input_size);
     std::vector<uint8_t> rsa_output(rsa_size);
-    std::string padded_data = PKCS1Padding(data, rsa_size - 11);
+    std::string padded_data = PKCS1Padding(data, max_input_size);
     std::string encrypted_data;
-    for (size_t i = 0; i < padded_data.size(); i += rsa_size - 11) {
-        const int len = std::min<int>(rsa_size - 11, padded_data.size() - i);
+    for (size_t i = 0; i < padded_data.size(); i += max_input_size) {
+        const int len = std::min<int>(max_input_size, padded_data.size() - i);
         memcpy(rsa_input.data(), padded_data.data() + i, len);
         const int rsa_result = RSA_public_encrypt(len, rsa_input.data(), rsa_output.data(), public_key, RSA_PKCS1_PADDING);
         if (rsa_result == -1) {
@@ -493,15 +513,16 @@ std::string cryptography::encryption::RSAEncryption::encrypt(const std::string& 
     return encrypted_data;
 }
 
+
 std::string cryptography::encryption::RSAEncryption::decrypt(const std::string& encryptedData, RSA* private_key) {
     // Decode the Base64 string to binary
-    std::string binary_encrypted_data = cryptography::binaryToBase64(encryptedData);
+    std::string binary_encrypted_data = base64ToBinary(encryptedData);
 
     // Decrypt the data
     int encrypted_data_size = static_cast<int>(binary_encrypted_data.length());
     int rsa_key_size = RSA_size(private_key);
     std::unique_ptr<unsigned char[]> decrypted_data(new unsigned char[rsa_key_size]);
-    int decrypted_data_size = RSA_private_decrypt(encrypted_data_size, reinterpret_cast<const unsigned char*>(binary_encrypted_data.c_str()), decrypted_data.get(), private_key, RSA_PKCS1_PADDING);
+    int decrypted_data_size = RSA_private_decrypt(encrypted_data_size, reinterpret_cast<const unsigned char*>(binary_encrypted_data.data()), decrypted_data.get(), private_key, RSA_PKCS1_PADDING);
     if (decrypted_data_size == -1) {
         throw std::runtime_error("RSA decryption failed");
     }
@@ -511,7 +532,6 @@ std::string cryptography::encryption::RSAEncryption::decrypt(const std::string& 
 
     return decryptedData;
 }
-
 
 
 // elliptic_curve fuctions 

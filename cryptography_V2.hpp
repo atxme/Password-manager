@@ -125,6 +125,7 @@ namespace cryptography {
 
     template <typename T>
     std::string to_binary(const T& data);
+    std::string base64ToBinary(const std::string &base64_str);
     std::string binaryToBase64(const std::string& binary_str);
 
     class HashFunctions {
