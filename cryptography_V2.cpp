@@ -123,6 +123,7 @@
 #include <openssl/core_names.h>
 #include <openssl/params.h>
 #include <openssl/kdf.h>
+#include <openssl/err.h>
 
 
 #include "cryptography_V2.hpp"
@@ -491,27 +492,19 @@ std::string cryptography::encryption::RSAEncryption::PKCS1Depadding(const std::s
 }
 
 std::string cryptography::encryption::RSAEncryption::encrypt(const std::string& data, RSA* public_key) {
-    // Encrypt the data with the RSA public key
-
-    std::cout << "public key : "<< public_key << std::endl;
-    const int rsa_size = RSA_size(public_key);
-    const int max_input_size = rsa_size - 11;
-    std::vector<uint8_t> rsa_input(max_input_size);
-    std::vector<uint8_t> rsa_output(rsa_size);
-    std::string padded_data = PKCS1Padding(data, max_input_size);
-    std::string encrypted_data;
-    for (size_t i = 0; i < padded_data.size(); i += max_input_size) {
-        const int len = std::min<int>(max_input_size, padded_data.size() - i);
-        memcpy(rsa_input.data(), padded_data.data() + i, len);
-        const int rsa_result = RSA_public_encrypt(len, rsa_input.data(), rsa_output.data(), public_key, RSA_PKCS1_PADDING);
-        if (rsa_result == -1) {
-            throw std::runtime_error("RSA encryption failed");
-        }
-        encrypted_data += std::string(rsa_output.begin(), rsa_output.begin() + rsa_result);
+    int rsa_key_size = RSA_size(public_key);
+    std::unique_ptr<unsigned char[]> encrypted_data(new unsigned char[rsa_key_size]);
+    int encrypted_data_size = RSA_public_encrypt(static_cast<int>(data.length()), reinterpret_cast<const unsigned char*>(data.data()), encrypted_data.get(), public_key, RSA_PKCS1_PADDING);
+    if (encrypted_data_size == -1) {
+        char err_buf[256];
+        ERR_error_string_n(ERR_get_error(), err_buf, sizeof(err_buf));
+        std::cerr << "OpenSSL Error: " << err_buf << std::endl;
+        throw std::runtime_error("RSA encryption failed");
     }
-
-    return encrypted_data;
+    std::string binary_encrypted_data(reinterpret_cast<const char*>(encrypted_data.get()), encrypted_data_size);
+    return binary_encrypted_data;
 }
+
 
 
 std::string cryptography::encryption::RSAEncryption::decrypt(const std::string& encryptedData, RSA* private_key) {
@@ -522,8 +515,11 @@ std::string cryptography::encryption::RSAEncryption::decrypt(const std::string& 
     int encrypted_data_size = static_cast<int>(binary_encrypted_data.length());
     int rsa_key_size = RSA_size(private_key);
     std::unique_ptr<unsigned char[]> decrypted_data(new unsigned char[rsa_key_size]);
-    int decrypted_data_size = RSA_private_decrypt(encrypted_data_size, reinterpret_cast<const unsigned char*>(binary_encrypted_data.data()), decrypted_data.get(), private_key, RSA_PKCS1_PADDING);
+    int decrypted_data_size = RSA_private_decrypt(rsa_key_size, reinterpret_cast<const unsigned char*>(binary_encrypted_data.data()), decrypted_data.get(), private_key, RSA_PKCS1_PADDING);
     if (decrypted_data_size == -1) {
+        char err_buf[256];
+        ERR_error_string_n(ERR_get_error(), err_buf, sizeof(err_buf));
+        std::cerr << "OpenSSL Error: " << err_buf << std::endl;
         throw std::runtime_error("RSA decryption failed");
     }
 
@@ -532,6 +528,10 @@ std::string cryptography::encryption::RSAEncryption::decrypt(const std::string& 
 
     return decryptedData;
 }
+
+
+
+
 
 
 // elliptic_curve fuctions 

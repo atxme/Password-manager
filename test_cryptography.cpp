@@ -1,6 +1,7 @@
 #include "cryptography_V2.hpp"
 #include <iostream>
 #include <string>
+#include <chrono>
 
 using namespace cryptography;
 
@@ -13,9 +14,7 @@ void cryptageelliptique() {
 
     // Le texte clair à chiffrer
     std::string plaintext = "Ceci est un message secret.";
-    std::string plaintextBase64 = cryptography::binaryToBase64(plaintext);
-    std::cout<< "Message clair en base 64: " << plaintextBase64 << std::endl;
-
+    std::cout << "Message en clair : " << plaintext << std::endl;
     // Chiffrer le message avec la clé publique
     std::string encryptedMessage = ec.encrypt(plaintext, publicKey);
 
@@ -25,11 +24,7 @@ void cryptageelliptique() {
 
     // Déchiffrer le message avec la clé privée
     std::string decryptedMessage = ec.decrypt(encryptedMessage, privateKey);
-
-    // Afficher le message déchiffré en base64
-    std::string decryptedMessageBase64 = cryptography::binaryToBase64(decryptedMessage);
-    std::cout << "Message déchiffré (base64) : " << decryptedMessageBase64 << std::endl;
-
+     std::cout << "Message déchiffré : " << decryptedMessage << std::endl;
     // Libérer la mémoire allouée pour les clés
     EC_KEY_free(privateKey);
 
@@ -37,7 +32,7 @@ void cryptageelliptique() {
 
 void cryptageRsa() {
     // Générer une paire de clés RSA
-    int key_length = 2048;
+    int key_length = 4096;
     std::string public_key_str, private_key_str;
     cryptography::encryption::RSAEncryption::generateRSAKeyPair(key_length, public_key_str, private_key_str);
 
@@ -52,20 +47,14 @@ void cryptageRsa() {
     std::string plaintext = "Ceci est un message secret.";
 
     // Chiffrer le message en clair
-    std::string encrypted_message = cryptography::encryption::RSAEncryption::encrypt(plaintext, public_key);
+    std::string encrypted_message_base64 = cryptography::binaryToBase64(cryptography::encryption::RSAEncryption::encrypt(plaintext, public_key));
 
-    // Convertir le message chiffré en base64
-    std::string encrypted_message_base64 = cryptography::binaryToBase64(encrypted_message);
-
-    // Convertir le message chiffré de la base64 en binaire
-    std::string encrypted_message_binary = cryptography::base64ToBinary(encrypted_message_base64);
+    std::cout << "Message chiffré (base64) : " << encrypted_message_base64 << std::endl;
 
     // Déchiffrer le message chiffré
-    std::string decrypted_message = cryptography::encryption::RSAEncryption::decrypt(encrypted_message_binary, private_key);
+    std::string decrypted_message = cryptography::encryption::RSAEncryption::decrypt(encrypted_message_base64, private_key);
 
-    // Afficher les résultats
-    std::cout << "Message clair : " << plaintext << std::endl;
-    std::cout << "Message chiffré (base64) : " << encrypted_message_base64 << std::endl;
+
     std::cout << "Message déchiffré : " << decrypted_message << std::endl;
 
     // Libérer les structures RSA, EVP_PKEY et BIO
@@ -75,6 +64,7 @@ void cryptageRsa() {
     BIO_free(pub_key_bio);
     BIO_free(priv_key_bio);
 }
+
 
 
 void cryptageAes(){
@@ -101,8 +91,69 @@ void cryptageAes(){
     std::cout << "Message déchiffré : " << decrypted_message << std::endl;
 }
 
+void cryptageSha256(){
+    // Message en clair à hacher
+    std::string plaintext = "J'aime les pattes";
+
+    // Hacher le message en clair
+    std::string hashed_message = cryptography::HashFunctions::hash_SHA256(plaintext);
+
+    // Afficher les résultats
+    std::cout << "Message clair : " << plaintext << std::endl;
+    std::cout << "Message haché (base64) : " << cryptography::binaryToBase64(hashed_message) << std::endl;
+}
+
+void cryptageSha512(){
+    // Message en clair à hacher
+    std::string plaintext = "J'aime les pattes";
+
+    // Hacher le message en clair
+    std::string hashed_message = cryptography::HashFunctions::hash_SHA512(plaintext);
+
+    // Afficher les résultats
+    std::cout << "Message clair : " << plaintext << std::endl;
+    std::cout << "Message haché (base64) : " << cryptography::binaryToBase64(hashed_message) << std::endl;
+}
+
 
 int main(){
+    std::chrono::high_resolution_clock::time_point debut, fin;
+    std::chrono::microseconds duree;
+
+    std::cout << "Cryptage elliptique" << std::endl;
+    debut = std::chrono::high_resolution_clock::now();
+    cryptageelliptique();
+    fin = std::chrono::high_resolution_clock::now();
+    duree = std::chrono::duration_cast<std::chrono::microseconds>(fin - debut);
+    std::cout << "Temps d'exécution de la fonction : " << duree.count() << " microsecondes" << std::endl;
+
+    std::cout << "Cryptage RSA" << std::endl;
+    debut = std::chrono::high_resolution_clock::now();
     cryptageRsa();
+    fin = std::chrono::high_resolution_clock::now();
+    duree = std::chrono::duration_cast<std::chrono::microseconds>(fin - debut);
+    std::cout << "Temps d'exécution de la fonction : " << duree.count() << " microsecondes" << std::endl;
+
+    std::cout << "Cryptage AES" << std::endl;
+    debut = std::chrono::high_resolution_clock::now();
+    cryptageAes();
+    fin = std::chrono::high_resolution_clock::now();
+    duree = std::chrono::duration_cast<std::chrono::microseconds>(fin - debut);
+    std::cout << "Temps d'exécution de la fonction : " << duree.count() << " microsecondes" << std::endl;
+
+    std::cout << "Cryptage SHA256" << std::endl;
+    debut = std::chrono::high_resolution_clock::now();
+    cryptageSha256();
+    fin = std::chrono::high_resolution_clock::now();
+    duree = std::chrono::duration_cast<std::chrono::microseconds>(fin - debut);
+    std::cout << "Temps d'exécution de la fonction : " << duree.count() << " microsecondes" << std::endl;
+
+    std::cout << "Cryptage SHA512" << std::endl;
+    debut = std::chrono::high_resolution_clock::now();
+    cryptageSha512();
+    fin = std::chrono::high_resolution_clock::now();
+    duree = std::chrono::duration_cast<std::chrono::microseconds>(fin - debut);
+    std::cout << "Temps d'exécution de la fonction : " << duree.count() << " microsecondes" << std::endl;
+
     return 0;
 }
