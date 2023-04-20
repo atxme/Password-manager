@@ -32,7 +32,7 @@ void cryptageelliptique() {
 
 void cryptageRsa() {
     // Générer une paire de clés RSA
-    int key_length = 4096;
+    int key_length = 8096;
     std::string public_key_str, private_key_str;
     cryptography::encryption::RSAEncryption::generateRSAKeyPair(key_length, public_key_str, private_key_str);
 
@@ -115,45 +115,21 @@ void cryptageSha512(){
     std::cout << "Message haché (base64) : " << cryptography::binaryToBase64(hashed_message) << std::endl;
 }
 
+template <typename Func>
+void measureExecutionTime(Func&& func, const std::string& functionName) {
+    auto start = std::chrono::high_resolution_clock::now();
+    func();
+    auto end = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
+    std::cout << "Temps d'exécution de la fonction " << functionName << " : " << duration << " microsecondes" << std::endl;
+}
 
-int main(){
-    std::chrono::high_resolution_clock::time_point debut, fin;
-    std::chrono::microseconds duree;
-
-    std::cout << "Cryptage elliptique" << std::endl;
-    debut = std::chrono::high_resolution_clock::now();
-    cryptageelliptique();
-    fin = std::chrono::high_resolution_clock::now();
-    duree = std::chrono::duration_cast<std::chrono::microseconds>(fin - debut);
-    std::cout << "Temps d'exécution de la fonction : " << duree.count() << " microsecondes" << std::endl;
-
-    std::cout << "Cryptage RSA" << std::endl;
-    debut = std::chrono::high_resolution_clock::now();
-    cryptageRsa();
-    fin = std::chrono::high_resolution_clock::now();
-    duree = std::chrono::duration_cast<std::chrono::microseconds>(fin - debut);
-    std::cout << "Temps d'exécution de la fonction : " << duree.count() << " microsecondes" << std::endl;
-
-    std::cout << "Cryptage AES" << std::endl;
-    debut = std::chrono::high_resolution_clock::now();
-    cryptageAes();
-    fin = std::chrono::high_resolution_clock::now();
-    duree = std::chrono::duration_cast<std::chrono::microseconds>(fin - debut);
-    std::cout << "Temps d'exécution de la fonction : " << duree.count() << " microsecondes" << std::endl;
-
-    std::cout << "Cryptage SHA256" << std::endl;
-    debut = std::chrono::high_resolution_clock::now();
-    cryptageSha256();
-    fin = std::chrono::high_resolution_clock::now();
-    duree = std::chrono::duration_cast<std::chrono::microseconds>(fin - debut);
-    std::cout << "Temps d'exécution de la fonction : " << duree.count() << " microsecondes" << std::endl;
-
-    std::cout << "Cryptage SHA512" << std::endl;
-    debut = std::chrono::high_resolution_clock::now();
-    cryptageSha512();
-    fin = std::chrono::high_resolution_clock::now();
-    duree = std::chrono::duration_cast<std::chrono::microseconds>(fin - debut);
-    std::cout << "Temps d'exécution de la fonction : " << duree.count() << " microsecondes" << std::endl;
+int main() {
+    measureExecutionTime(cryptageelliptique, "Cryptage elliptique");
+    measureExecutionTime(cryptageRsa, "Cryptage RSA");
+    measureExecutionTime(cryptageAes, "Cryptage AES");
+    measureExecutionTime(cryptageSha256, "Cryptage SHA256");
+    measureExecutionTime(cryptageSha512, "Cryptage SHA512");
 
     return 0;
 }
