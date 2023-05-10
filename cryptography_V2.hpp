@@ -107,8 +107,8 @@
 #include <bitset>
 #endif
 
-#ifndef __include_obj_mac.h__
-#define __include_obj_mac.h__
+#ifndef __include_objmac__
+#define __include_objmac__
 #include <openssl/obj_mac.h>
 #endif
 
@@ -133,6 +133,12 @@ namespace cryptography {
             static std::string hash_SHA256(std::string data);
             static std::string hash_SHA512(std::string data);
     };
+
+    class DerivationKey{
+        public :
+            static std::string generateSalt();
+            static void pbkf2Derivation(const std::string &password, const std::string &salt, int iteration, int key_length, std::string &key);
+    }
 
     namespace encryption {
 

@@ -3,6 +3,10 @@
 #include <string>
 #include <chrono>
 
+#include <QtCore/QObject>
+#include <QtWidgets/QApplication>
+
+
 using namespace cryptography;
 
 void cryptageelliptique() {

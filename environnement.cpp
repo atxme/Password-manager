@@ -15,7 +15,7 @@
 
 #ifndef __include_cryptography__
 #define __include_cryptography__
-#include "cryptography.hpp"
+#include "cryptography_V2.hpp"
 #endif
 
 #ifndef __include_fstream__
@@ -30,33 +30,7 @@
 
 using namespace std;
 
-
-namespace LoginEnvironnement {
-
-    static bool connected = false; //update the parameter when the user is connected
-
-    class Interface {
-    private:
-        std::string password;
-
-    public:
-        void createUser();
-        static void buttonClicked(GtkWidget *widget, gpointer data, gpointer Window);
-        static void togglePassword(GtkWidget *widget, gpointer data);
-    };
-
-    class InterfaceConnect{
-    private:
-        std::string password;
-
-    public :
-        void connectUser();
-        static void buttonClicked(GtkWidget *widget, gpointer data, gpointer Window);
-        static void togglePassword(GtkWidget *widget, gpointer data);
-    };
-    
-
-}
+#include "environnement.hpp"
 
 // create user interface 
 
@@ -76,11 +50,20 @@ void LoginEnvironnement::Interface::buttonClicked(GtkWidget *widget, gpointer da
     std::string hashpassword;
     entry_text = gtk_entry_get_text(GTK_ENTRY(data));
     std::string password = std::string(entry_text);
-    hashpassword = hashFunction(password);
-    std::vector<unsigned char> encryptPassword = encrypt(std::vector<unsigned char>(hashpassword.begin(), hashpassword.end()), "Create_User");
-    generateEnvironnementVariable("hash_login.bin", std::string(encryptPassword.begin(), encryptPassword.end()));
+    hashpassword = cryptography::HashFunctions::hash_SHA512(password);
+    std::string kek_key,aes_key,aes_key_encrypted;
+    kek_key = cryptography::encryption::AES::ReadFromFile("aes_kek.bin");
+    aes_key_encrypted = cryptography::encryption::AES::ReadFromFile("aes_key.bin");
+    cryptography::encryption::AES::AES_DECRYPTION(aes_key_encrypted, kek_key, aes_key);
+    std::string encryptPassword,IV;
+    cryptography::encryption::AES::GENERATE_AES_IV(IV);
+    cryptography::encryption::AES::AES_ENCRYPTION(hashpassword,aes_key,IV,encryptPassword);
+    cryptography::encryption::AES::generateEnvironnementVariable("hash_login.bin", encryptPassword);
+    //delete aes_key, aes_key_encrypted, kek_key, encryptPassword,password,hashpassword;  //delete all important datas 
     gtk_main_quit(); // quitter le main loop de GTK+
-}
+
+    
+}   
 
 void LoginEnvironnement::Interface::createUser() {
     GtkWidget *createUserwindow;
@@ -171,15 +154,18 @@ void LoginEnvironnement::InterfaceConnect::buttonClicked(GtkWidget *widget, gpoi
     std::string hashpassword;
     entry_text = gtk_entry_get_text(GTK_ENTRY(data));
     std::string password = std::string(entry_text);
-    hashpassword = hashFunction(password);
+    hashpassword = cryptography::HashFunctions::hash_SHA512(password);
     
     std::string hashReference;
-    std::string key = decryptKey();
+    std::string kek_key=cryptography::encryption::AES::ReadFromFile("aes_kek.bin");
+    std::string encrypted_key=cryptography::encryption::AES::ReadFromFile("aes_key.bin");
+    std::string aes_key;
+    cryptography::encryption::AES::AES_DECRYPTION(encrypted_key,kek_key,aes_key);
 
-    std::string hashReferenceCrypted = ReadFromFile("hash_login.bin");
-    hashReference = decrypt(hashReferenceCrypted, key);
+    std::string hashReferenceCrypted =cryptography::encryption::AES::ReadFromFile("hash_login.bin");
+    cryptography::encryption::AES::AES_DECRYPTION(hashReferenceCrypted,aes_key,hashReference);
 
-    memset(&key[0], 0, key.size()); //delete the key from memory after use
+    memset(&aes_key[0], 0, aes_key.size()); //delete the key from memory after use
 
     if (hashpassword == hashReference) { 
         connected=true;       

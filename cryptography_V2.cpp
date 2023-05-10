@@ -109,8 +109,8 @@
 #include <bitset>
 #endif
 
-#ifndef __include_obj_mac.h__
-#define __include_obj_mac.h__
+#ifndef __include_objmac__
+#define __include_objmac__
 #include <openssl/obj_mac.h>
 #endif
 
@@ -186,6 +186,8 @@ namespace cryptography {
     }
 
 
+    
+
 }
 
 //hash functions 
@@ -212,6 +214,43 @@ std::string cryptography::HashFunctions::hash_SHA512(std::string data) {
         result.append(buf, 2);
     }
     return result;
+}
+
+//Key Derivation functions
+
+void cryptography::DerivationKey::generateSalt(std::string &salt){
+    const int SALT_SIZE = 16;
+
+    OpenSSL_add_all_algorithms();
+    RAND_load_file("/dev/urandom", 32);
+    unsigned char gen_salt[SALT_SIZE];
+    if (!RAND_bytes(gen_salt, sizeof(gen_salt))) {
+        std::cerr << "Erreur lors de la génération du sel" << std::endl;
+        return;
+    }
+    salt=std::string(reinterpret_cast<char*>(gen_salt), sizeof(gen_salt));
+
+    // Nettoyer OpenSSL
+    EVP_cleanup();
+    RAND_cleanup();
+
+}
+
+void cryptography::DerivationKey::pbkf2Derivation(const std::string &password, const std::string &salt, int iteration, int key_length, std::string &key){
+    unsigned char key[key_length];
+    
+    OpenSSL_add_all_algorithms();
+
+    if (!PKCS5_PBKDF2_HMAC(password.c_str(), password.length(), reinterpret_cast<const unsigned char*>(salt.c_str()), salt.length(), iteration, EVP_sha256(), key_length, key)) {
+        std::cerr << "Erreur lors de la dérivation de la clé" << std::endl;
+        return;
+    }
+
+    key = std::string(reinterpret_cast<char*>(key), sizeof(key));
+
+    // Nettoyer OpenSSL
+    EVP_cleanup();
+    RAND_cleanup();
 }
 
 
