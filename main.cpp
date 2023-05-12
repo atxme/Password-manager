@@ -19,12 +19,18 @@ bool login(std::string username, std::string password){
 
 
 bool isRegistered() {
-    std::ifstream file(std::string(getenv("HOME")) + "/.myapp/aes_key.bin");
-    return file.good() ? true : false;
+    std::string filePath = std::string(getenv("HOME")) + "/.myapp/aes_key.bin";
+    //std::cout << "Chemin d'accès au fichier : " << filePath << std::endl;
+
+    std::ifstream file(filePath);
+    if (file.good()) {
+        return true; // Le fichier existe
+    } else {
+        return false; // Le fichier n'existe pas
+    }
 }
 
 int main() {
-
     // Check if the program is run as root
     if (getuid() != 0) {
         std::cerr << "Erreur : ce programme doit être exécuté en tant que superutilisateur (root)" << std::endl;
@@ -35,31 +41,23 @@ int main() {
         std::cerr << "Erreur lors de la définition de l'UID effectif en tant que superutilisateur (root)" << std::endl;
         return 1;
     }
-    bool registered = isRegistered();
-    while (true){
+
+    while (true) {
+        bool registered = isRegistered();
 
         if (registered) {
             LoginEnvironnement::InterfaceConnect().connectUser();
-
+            break; // L'utilisateur s'est connecté avec succès, sortir de la boucle
         } else {
-            std::string aes_kek, aes_key,aes_key_encrypted,iv;
-            cryptography::encryption::AES::GENERATE_AES_KEY(aes_kek);   
-            cryptography::encryption::AES::GENERATE_AES_KEY(aes_key);   
-            cryptography::encryption::AES::GENERATE_AES_IV(iv);
-
-            cryptography::encryption::AES::AES_ENCRYPTION(aes_key, aes_kek,iv,aes_key_encrypted);
-
-            cryptography::encryption::AES::generateEnvironnementVariable("aes_kek.bin", aes_kek);
-            cryptography::encryption::AES::generateEnvironnementVariable("aes_key.bin", aes_key_encrypted);  
-
-            std::cout << "AES KEK: " << cryptography::binaryToBase64(aes_kek)<< std::endl;
-            std::cout << "AES key: " << cryptography::binaryToBase64(aes_key)<< std::endl;
             LoginEnvironnement::Interface().createUser();
+            registered = isRegistered();
+            if (registered) {
+                LoginEnvironnement::InterfaceConnect().connectUser();
+                break; // L'utilisateur s'est enregistré et connecté, sortir de la boucle
+            }
         }
-        return 0; 
     }
-    
+    cout << "Welcome" << endl;
+    return 0;
 }
-
-
 

@@ -137,7 +137,7 @@ namespace cryptography {
         std::string binary_str;
         const char* data_ptr = reinterpret_cast<const char*>(&data);
         const size_t data_size = sizeof(data);
-        for (size_t i = 0; i < data_size; ++i) {
+        for (size_t i = 0; i < data_size; ++i){
             std::bitset<8> binary_char(data_ptr[i]);
             binary_str += binary_char.to_string();
         }
@@ -237,21 +237,22 @@ void cryptography::DerivationKey::generateSalt(std::string &salt){
 }
 
 void cryptography::DerivationKey::pbkf2Derivation(const std::string &password, const std::string &salt, int iteration, int key_length, std::string &key){
-    unsigned char key[key_length];
+    unsigned char derived_key[key_length];
     
     OpenSSL_add_all_algorithms();
 
-    if (!PKCS5_PBKDF2_HMAC(password.c_str(), password.length(), reinterpret_cast<const unsigned char*>(salt.c_str()), salt.length(), iteration, EVP_sha256(), key_length, key)) {
+    if (!PKCS5_PBKDF2_HMAC(password.c_str(), password.length(), reinterpret_cast<const unsigned char*>(salt.c_str()), salt.length(), iteration, EVP_sha256(), key_length, derived_key)) {
         std::cerr << "Erreur lors de la dérivation de la clé" << std::endl;
         return;
     }
 
-    key = std::string(reinterpret_cast<char*>(key), sizeof(key));
+    key = std::string(reinterpret_cast<char*>(derived_key), key_length);
 
     // Nettoyer OpenSSL
     EVP_cleanup();
     RAND_cleanup();
 }
+
 
 
 //AES ENCRYPTION AND DECRYPTION functions 

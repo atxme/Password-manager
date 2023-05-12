@@ -51,19 +51,37 @@ void LoginEnvironnement::Interface::buttonClicked(GtkWidget *widget, gpointer da
     entry_text = gtk_entry_get_text(GTK_ENTRY(data));
     std::string password = std::string(entry_text);
     hashpassword = cryptography::HashFunctions::hash_SHA512(password);
-    std::string kek_key,aes_key,aes_key_encrypted;
-    kek_key = cryptography::encryption::AES::ReadFromFile("aes_kek.bin");
-    aes_key_encrypted = cryptography::encryption::AES::ReadFromFile("aes_key.bin");
-    cryptography::encryption::AES::AES_DECRYPTION(aes_key_encrypted, kek_key, aes_key);
-    std::string encryptPassword,IV;
-    cryptography::encryption::AES::GENERATE_AES_IV(IV);
-    cryptography::encryption::AES::AES_ENCRYPTION(hashpassword,aes_key,IV,encryptPassword);
-    cryptography::encryption::AES::generateEnvironnementVariable("hash_login.bin", encryptPassword);
-    //delete aes_key, aes_key_encrypted, kek_key, encryptPassword,password,hashpassword;  //delete all important datas 
-    gtk_main_quit(); // quitter le main loop de GTK+
+    std::string kek_key,aes_key,encrypted_aes_key;
 
+    cryptography::encryption::AES::GENERATE_AES_KEY(aes_key);
+    std::string encryptPassword,IV,salt,derivateKey;
+
+    cryptography::encryption::AES::GENERATE_AES_IV(IV);
+    cryptography::DerivationKey::generateSalt(salt);
+    const int iteration = 100000;
+    const int keySize = 32;
+    cryptography::DerivationKey::pbkf2Derivation(password,salt,iteration,keySize, derivateKey);
+
+    cryptography::encryption::AES::AES_ENCRYPTION(hashpassword,aes_key,IV,encryptPassword);
+    cryptography::encryption::AES::AES_ENCRYPTION(aes_key,derivateKey,IV,encrypted_aes_key);
+
+    cryptography::encryption::AES::generateEnvironnementVariable("aes_key.bin", encrypted_aes_key);
+    cryptography::encryption::AES::generateEnvironnementVariable("salt.bin", salt);
+    cryptography::encryption::AES::generateEnvironnementVariable("hash_login.bin", encryptPassword);
     
-}   
+    // Supprimer les données sensibles
+    aes_key.clear();
+    encrypted_aes_key.clear();
+    password.clear();
+    derivateKey.clear();
+    salt.clear();
+    hashpassword.clear();
+    encryptPassword.clear();
+    IV.clear();
+    entry_text = nullptr;
+    gtk_main_quit(); // quitter le main loop de GTK+
+}
+
 
 void LoginEnvironnement::Interface::createUser() {
     GtkWidget *createUserwindow;
@@ -155,25 +173,37 @@ void LoginEnvironnement::InterfaceConnect::buttonClicked(GtkWidget *widget, gpoi
     entry_text = gtk_entry_get_text(GTK_ENTRY(data));
     std::string password = std::string(entry_text);
     hashpassword = cryptography::HashFunctions::hash_SHA512(password);
+
+    std::string hashReference, salt, aes_key, derivation_key, aes_key_crypted;
     
-    std::string hashReference;
-    std::string kek_key=cryptography::encryption::AES::ReadFromFile("aes_kek.bin");
-    std::string encrypted_key=cryptography::encryption::AES::ReadFromFile("aes_key.bin");
-    std::string aes_key;
-    cryptography::encryption::AES::AES_DECRYPTION(encrypted_key,kek_key,aes_key);
+    salt = cryptography::encryption::AES::ReadFromFile("salt.bin");
+    const int iterations = 100000;
+    const int key_size = 32;
+    cryptography::DerivationKey::pbkf2Derivation(password, salt, iterations, key_size, derivation_key);
 
-    std::string hashReferenceCrypted =cryptography::encryption::AES::ReadFromFile("hash_login.bin");
-    cryptography::encryption::AES::AES_DECRYPTION(hashReferenceCrypted,aes_key,hashReference);
+    aes_key_crypted = cryptography::encryption::AES::ReadFromFile("aes_key.bin");
+    std::string decrypted_aes_key;
+    cryptography::encryption::AES::AES_DECRYPTION(aes_key_crypted, derivation_key, decrypted_aes_key);
 
-    memset(&aes_key[0], 0, aes_key.size()); //delete the key from memory after use
+    std::string hashReferenceCrypted = cryptography::encryption::AES::ReadFromFile("hash_login.bin");
+    cryptography::encryption::AES::AES_DECRYPTION(hashReferenceCrypted, decrypted_aes_key, hashReference);
 
-    if (hashpassword == hashReference) { 
-        connected=true;       
+    if (hashpassword == hashReference) {
+        connected = true;
         gtk_main_quit(); // quitter le main loop de GTK+
-    } 
-    else {
+    } else {
         std::cout << "Password is incorrect" << std::endl;
-    }   
+    }
+
+    // Supprimer les données sensibles
+    decrypted_aes_key.clear();
+    password.clear();
+    salt.clear();
+    hashpassword.clear();
+    hashReferenceCrypted.clear();
+    aes_key_crypted.clear();
+
+    memset(const_cast<gchar*>(entry_text), 0, strlen(entry_text)); // Supprimer le texte saisi dans l'espace mémoire
 }
 
 

@@ -136,9 +136,9 @@ namespace cryptography {
 
     class DerivationKey{
         public :
-            static std::string generateSalt();
+            static void generateSalt(std::string &salt);
             static void pbkf2Derivation(const std::string &password, const std::string &salt, int iteration, int key_length, std::string &key);
-    }
+    };
 
     namespace encryption {
 
