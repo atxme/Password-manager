@@ -123,6 +123,8 @@
 
 namespace cryptography {
 
+    extern std::string tempkey, tempiv;
+
     template <typename T>
     std::string to_binary(const T& data);
     std::string base64ToBinary(const std::string &base64_str);

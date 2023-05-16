@@ -130,7 +130,10 @@
 
 namespace cryptography {
 
-   
+    std::string tempkey,tempiv;
+    cryptography::encryption::AES::GENERATE_AES_KEY(tempkey);
+    cryptography::encryption::AES::GENERATE_AES_IV(tempiv);
+
     template <typename T>
     std::string to_binary(const T& data)
     {
