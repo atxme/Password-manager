@@ -2,6 +2,7 @@
 #include <gtk-3.0/gtk/gtkx.h>
 #include "cryptography_V2.hpp"
 #include "environnement.hpp"
+#include "data.hpp"
 #include <sqlite3.h>
 #include <cstdlib>
 #include<unistd.h>
@@ -10,6 +11,7 @@
 #include <iostream>
 #include <stdexcept>
 
+std::string tempkey,tempiv;
 
 using namespace std;
 
@@ -30,7 +32,7 @@ bool isRegistered() {
     }
 }
 
-extern std::string tempkey,tempiv;
+
 
 int main() {
     // Check if the program is run as root
@@ -47,7 +49,7 @@ int main() {
     
     cryptography::encryption::AES::GENERATE_AES_KEY(tempkey);
     cryptography::encryption::AES::GENERATE_AES_IV(tempiv);
-    
+
     while (true) {
         bool registered = isRegistered();
 

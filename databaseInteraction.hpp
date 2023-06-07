@@ -24,18 +24,24 @@
 #endif
 
 #ifndef CRYPTOGRAPHY_HPP
-#include "cryptography.hpp"
+#include "cryptography_V2.hpp"
 #endif
 
+#ifndef DATA
+#define DATA
+#include "data.hpp"
+#endif
+
+
 #ifndef DATABASE_PATH
-#define DATABASE_PATH (std::string(getenv("HOME")) + "/.myapp/" + filename).c_str()
+#define DATABASE_PATH (std::string(getenv("HOME")) + "/.myapp/" + "database.db").c_str()
 #endif
 
 namespace SqlInteractions {
 
-    std::string passwordCreation(std::string& password) {
-        
-    }
+    int passwordCreation(std::string& password);
+    int encryptDatabase();
+    int decryptDatabase(std::string& password,std::string& salt);
 
 }
 

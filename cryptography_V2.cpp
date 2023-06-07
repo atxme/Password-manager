@@ -125,7 +125,10 @@
 #include <openssl/kdf.h>
 #include <openssl/err.h>
 
-std::string tempkey,tempiv;
+#ifndef TEMP
+#define TEMP 
+#include "data.hpp"
+#endif
 
 namespace cryptography {
 

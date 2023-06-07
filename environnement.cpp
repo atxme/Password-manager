@@ -29,7 +29,14 @@
 #include <glib.h>
 #endif
 
+#ifndef TEMP
+#define TEMP 
+#include "data.hpp"
+#endif
+
 using namespace std;
+
+
 
 #include "environnement.hpp"
 
@@ -201,7 +208,15 @@ void LoginEnvironnement::InterfaceConnect::buttonClicked(GtkWidget *widget, gpoi
     if (hashpassword == hashReference) {
         connected = true;
         gtk_main_quit(); // Quitter le main loop de GTK+
-    } else {
+
+        std::string derivation_key_encrypted;
+        cryptography::encryption::AES::AES_ENCRYPTION(derivation_key,tempkey,tempiv,derivation_key_encrypted);
+        cryptography::encryption::AES::generateEnvironnementVariable("dev_key.bin", derivation_key_encrypted);
+        derivation_key_encrypted.clear();
+    } 
+    
+    
+    else {
         GtkWidget *errorLabel = callbackData->errorLabel;
         const gchar *errorMessage = "Mot de passe incorrect";
         gtk_label_set_text(GTK_LABEL(errorLabel), errorMessage); // Afficher le message d'erreur sur le GtkLabel
@@ -214,6 +229,7 @@ void LoginEnvironnement::InterfaceConnect::buttonClicked(GtkWidget *widget, gpoi
     gtk_entry_set_text(GTK_ENTRY(entry), "");
 
     // Supprimer les données sensibles
+    
     decrypted_aes_key.clear();
     password.clear();
     salt.clear();
