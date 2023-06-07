@@ -26,6 +26,7 @@
 #ifndef __include_gtk__
 #define __include_gtk__
 #include <gtk-3.0/gtk/gtkx.h>
+#include <glib.h>
 #endif
 
 using namespace std;
@@ -143,7 +144,7 @@ void LoginEnvironnement::Interface::createUser() {
 
     gtk_box_pack_start(GTK_BOX(hbox), button, FALSE, FALSE, 0);
 
-
+    g_signal_connect(toggleButton, "clicked", G_CALLBACK(togglePassword), entry);
     g_signal_connect(button, "clicked", G_CALLBACK(buttonClicked), entry);
     g_signal_connect(entry, "activate", G_CALLBACK(buttonClicked), entry);
     g_signal_connect_swapped(createUserwindow, "destroy", G_CALLBACK(gtk_widget_destroy), createUserwindow);
@@ -167,10 +168,19 @@ void LoginEnvironnement::InterfaceConnect::togglePassword(GtkWidget *widget, gpo
     }
 }
 
-void LoginEnvironnement::InterfaceConnect::buttonClicked(GtkWidget *widget, gpointer data, gpointer Window) {
+struct CallbackData {
+    GtkWidget *entry;
+    GtkWidget *errorLabel;
+};
+
+void LoginEnvironnement::InterfaceConnect::buttonClicked(GtkWidget *widget, gpointer data) {
+    CallbackData *callbackData = (CallbackData *)data;
+    GtkWidget *entry = GTK_WIDGET(callbackData->entry);
+    GtkWidget *errorLabel = GTK_WIDGET(callbackData->errorLabel);
+
     const gchar *entry_text;
     std::string hashpassword;
-    entry_text = gtk_entry_get_text(GTK_ENTRY(data));
+    entry_text = gtk_entry_get_text(GTK_ENTRY(callbackData->entry));
     std::string password = std::string(entry_text);
     hashpassword = cryptography::HashFunctions::hash_SHA512(password);
 
@@ -190,10 +200,18 @@ void LoginEnvironnement::InterfaceConnect::buttonClicked(GtkWidget *widget, gpoi
 
     if (hashpassword == hashReference) {
         connected = true;
-        gtk_main_quit(); // quitter le main loop de GTK+
+        gtk_main_quit(); // Quitter le main loop de GTK+
     } else {
-        std::cout << "Password is incorrect" << std::endl;
+        GtkWidget *errorLabel = callbackData->errorLabel;
+        const gchar *errorMessage = "Mot de passe incorrect";
+        gtk_label_set_text(GTK_LABEL(errorLabel), errorMessage); // Afficher le message d'erreur sur le GtkLabel
+        GdkRGBA redColor;
+        gdk_rgba_parse(&redColor, "#FF0000");
+        gtk_widget_override_color(errorLabel, GTK_STATE_FLAG_NORMAL, &redColor); // Modifier la couleur du texte en rouge
     }
+
+    // Réinitialiser le texte de l'entrée
+    gtk_entry_set_text(GTK_ENTRY(entry), "");
 
     // Supprimer les données sensibles
     decrypted_aes_key.clear();
@@ -207,7 +225,10 @@ void LoginEnvironnement::InterfaceConnect::buttonClicked(GtkWidget *widget, gpoi
 }
 
 
-void LoginEnvironnement::InterfaceConnect::connectUser(){
+
+GtkWidget* LoginEnvironnement::InterfaceConnect::errorLabel = nullptr;
+
+void LoginEnvironnement::InterfaceConnect::connectUser() {
     GtkWidget *connectUserwindow;
     GtkWidget *button;
     GtkWidget *entry;
@@ -215,6 +236,9 @@ void LoginEnvironnement::InterfaceConnect::connectUser(){
     GtkWidget *vbox;
     GtkWidget *toggleButton;
     GtkCssProvider *provider, *provider2;
+
+    // Création des données de rappel
+    CallbackData *callbackData = new CallbackData;
 
     gtk_init(0, NULL);
 
@@ -250,6 +274,8 @@ void LoginEnvironnement::InterfaceConnect::connectUser(){
     gtk_box_pack_start(GTK_BOX(vbox), entry, FALSE, FALSE, 0);
     gtk_entry_set_visibility(GTK_ENTRY(entry), FALSE); // Masquer le texte entré
 
+    callbackData->entry = entry;
+
     GtkWidget *hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
     gtk_box_pack_end(GTK_BOX(vbox), hbox, FALSE, FALSE, 0);
 
@@ -267,13 +293,18 @@ void LoginEnvironnement::InterfaceConnect::connectUser(){
 
     gtk_box_pack_start(GTK_BOX(hbox), button, FALSE, FALSE, 0);
 
+    // Ajout du GtkLabel pour afficher le message d'erreur
+    GtkWidget *errorLabel = gtk_label_new(NULL);
+    gtk_box_pack_end(GTK_BOX(vbox), errorLabel, FALSE, FALSE, 0);
 
-    g_signal_connect(button, "clicked", G_CALLBACK(buttonClicked), entry);
-    g_signal_connect(entry, "activate", G_CALLBACK(buttonClicked), entry);
+    callbackData->errorLabel = errorLabel;
+
+    g_signal_connect(toggleButton, "clicked", G_CALLBACK(togglePassword), callbackData->entry);
+    g_signal_connect(button, "clicked", G_CALLBACK(buttonClicked), callbackData);
+    g_signal_connect(entry, "activate", G_CALLBACK(buttonClicked), callbackData);
     g_signal_connect_swapped(connectUserwindow, "destroy", G_CALLBACK(gtk_widget_destroy), connectUserwindow);
 
     gtk_widget_show_all(connectUserwindow);
 
     gtk_main();
-
 }

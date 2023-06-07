@@ -50,12 +50,19 @@ namespace LoginEnvironnement {
     class InterfaceConnect{
     private:
         std::string password;
+        static GtkWidget *errorLabel;
 
     public :
         void connectUser();
-        static void buttonClicked(GtkWidget *widget, gpointer data, gpointer Window);
+        static void buttonClicked(GtkWidget *widget, gpointer data);
         static void togglePassword(GtkWidget *widget, gpointer data);
     };
 
+    class mainInterface{
+    private:
+        std::string password;
 
+    public :
+        void Interface();
+    };
 }

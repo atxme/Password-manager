@@ -30,6 +30,8 @@ bool isRegistered() {
     }
 }
 
+extern std::string tempkey,tempiv;
+
 int main() {
     // Check if the program is run as root
     if (getuid() != 0) {
@@ -42,6 +44,10 @@ int main() {
         return 1;
     }
 
+    
+    cryptography::encryption::AES::GENERATE_AES_KEY(tempkey);
+    cryptography::encryption::AES::GENERATE_AES_IV(tempiv);
+    
     while (true) {
         bool registered = isRegistered();
 

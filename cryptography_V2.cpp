@@ -101,7 +101,7 @@
 
 #ifndef __include_cryptography__
 #define __include_cryptography__
-#include "cryptography.hpp"
+#include "cryptography_V2.hpp"
 #endif
 
 #ifndef __include_bitset__
@@ -125,14 +125,11 @@
 #include <openssl/kdf.h>
 #include <openssl/err.h>
 
-
-#include "cryptography_V2.hpp"
+std::string tempkey,tempiv;
 
 namespace cryptography {
 
-    std::string tempkey,tempiv;
-    cryptography::encryption::AES::GENERATE_AES_KEY(tempkey);
-    cryptography::encryption::AES::GENERATE_AES_IV(tempiv);
+   
 
     template <typename T>
     std::string to_binary(const T& data)
